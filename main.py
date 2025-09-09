@@ -1,5 +1,5 @@
 # # Install AgentChat and OpenAI client from Extensions
-# pip install -U "autogen-agentchat" "autogen-ext[openai]" "autogen-ext[azure]" "aiohttp"
+# pip install -U "autogen-agentchat" "autogen-ext[openai]" "autogen-ext[azure]"
 
 from autogen_core.models import UserMessage
 from autogen_ext.auth.azure import AzureTokenProvider
