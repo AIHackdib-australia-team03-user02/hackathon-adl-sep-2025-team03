@@ -6,6 +6,7 @@ from pathlib import Path
 from datetime import datetime
 import json
 import shutil
+import os, stat, time
 from typing import Any, Dict, Optional
 
 
@@ -86,6 +87,32 @@ def _write_html_index(index_md: str, title: str, out_dir: Path) -> None:
     (out_dir / "index.html").write_text(html_page, encoding="utf-8")
 
 
+def _wipe_dir_contents(dirpath: Path) -> None:
+    """
+    Best-effort: remove files & subdirs inside dirpath without removing dirpath itself.
+    Safer on Windows where open handles can block rmdir.
+    """
+    dirpath.mkdir(parents=True, exist_ok=True)
+    # try a few times in case of transient locks from previews
+    for _ in range(3):
+        ok = True
+        for p in list(dirpath.iterdir()):
+            try:
+                if p.is_file() or p.is_symlink():
+                    try:
+                        os.chmod(p, stat.S_IWRITE)  # clear read-only if set
+                    except Exception:
+                        pass
+                    p.unlink(missing_ok=True)
+                else:
+                    shutil.rmtree(p, ignore_errors=True)
+            except Exception:
+                ok = False
+        if ok:
+            break
+        time.sleep(0.2)
+
+
 def write_reports(
     payload: Any,
     out_dir: str = "reports",
@@ -140,12 +167,11 @@ Generated: {ts}
     # Optional HTML index if 'markdown' is installed
     _write_html_index(index_md, title=title, out_dir=run_dir)
 
-    # Mirror to reports/latest for convenience
+    # Mirror to reports/latest for convenience (Windows-safe)
     if mirror_latest:
         latest = Path(out_dir) / "latest"
-        if latest.exists():
-            shutil.rmtree(latest)
-        latest.mkdir(parents=True, exist_ok=True)
+        _wipe_dir_contents(latest)
+        # Copy current run outputs into latest (overwrite if present)
         for name in ["index.md", "IRAP_Company_Policy.md", "Compliance_Report.md", "Remediation_Plan.md", "index.html"]:
             src = run_dir / name
             if src.exists():
