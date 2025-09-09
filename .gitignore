@@ -1,0 +1,22 @@
+# Python venv & caches
+.venv/
+__pycache__/
+*.pyc
+
+# Env files (secrets)
+.env
+.env.*
+
+# VS Code & tooling (optional)
+.vscode/
+*.code-workspace
+
+# Logs & coverage
+*.log
+.coverage
+pytest_cache/
+.mypy_cache/
+
+# OS noise
+Thumbs.db
+.DS_Store
