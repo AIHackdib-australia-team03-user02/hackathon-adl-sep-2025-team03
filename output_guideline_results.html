@@ -1,117 +1,281 @@
-<html><head><title>Guideline Results</title></head><body>
-<h1>Guideline Results</h1>
-<ul>
-<li><strong>User accounts are not configured with password never expires or password not required.</strong>: **Summary of Findings:**
 
-From the files reviewed:
+<html>
+<head>
+    <title>Guideline Results</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #f8f9fa;
+            margin: 0;
+            padding: 2em;
+        }
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 1em;
+        }
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+        li {
+            background: #fff;
+            margin-bottom: 1em;
+            padding: 1em;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.07);
+        }
+        strong {
+            color: #2980b9;
+            font-size: 1.1em;
+        }
+        .summary {
+            display: block;
+            margin-top: 0.5em;
+            color: #444;
+            white-space: pre-line;
+        }
+    </style>
+</head>
+<body>
+    <h1>Guideline Results</h1>
+    <ul>
+        <li>
+            <strong>User accounts are not configured with password never expires or password not required.</strong>
+            <span class="summary">**Findings Summary**
+
+From the search results in your local setup scripts:
 
 - **DisablePasswordChange.txt**  
-  - Sets `DisablePasswordChange` to `0` in `HKLM:\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters`.  
-  - This allows password changes for computer accounts (not disabling them), and does not configure “password never expires” for user accounts.
+  - Sets `HKLM:\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters\DisablePasswordChange` to `0`  
+  - This means password changes are *enabled* for machine accounts (Netlogon), not disabled.  
+  - No user accounts are created or altered.  
 
 - **MaximumPasswordAge.txt**  
-  - Sets `MaximumPasswordAge` to `30`, meaning passwords expire every 30 days.  
-  - This reinforces password expiration rather than disabling it.
+  - Sets `HKLM:\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters\MaximumPasswordAge` to `30`  
+  - This limits machine account password lifetime to 30 days before change.  
+  - No user accounts are created or altered.  
 
-**Assessment Against Criterion:**  
-The requirement is that user accounts should **not** be configured with:
-1. Password never expires  
-2. Password not required  
-
-Neither script configures any such insecure settings. Both enforce password expiration and do not disable password requirements.
+**Analysis against criteria:**  
+The given requirement — *"User accounts are not configured with password never expires or password not required"* — is met by the snippets reviewed. These scripts affect machine account password policy, not individual user account settings, and there is no indication of `password never expires` or `password not required` for any user accounts.
 
 **Conclusion:**  
-✅ The current setup scripts satisfy the criterion: *"User accounts are not configured with password never expires or password not required."*  
+Based on the two setup scripts provided (`DisablePasswordChange.txt`, `MaximumPasswordAge.txt`), the current configuration does **not** violate the stated criteria. To fully validate, all other account creation/management scripts should be checked for such settings.
 
-Referenced files: **DisablePasswordChange.txt**, **MaximumPasswordAge.txt**  
-
-TERMINATE</li>
-<li><strong>The UserPassword attribute for user accounts is not used.</strong>: **Summary of Findings:**
+TERMINATE</span>
+        </li>
+        <li>
+            <strong>The UserPassword attribute for user accounts is not used.</strong>
+            <span class="summary">**Findings Summary**
 
 From the provided setup scripts:
 
 - **DisablePasswordChange.txt**  
-  - Adjusts `DisablePasswordChange` under `HKLM:\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters`.  
-  - No mention of `UserPassword` or any LDAP/user attribute.
+  - Adjusts `HKLM:\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters\DisablePasswordChange` to `0` (enables password change for machine accounts).  
+  - No use of `UserPassword`.  
 
 - **MaximumPasswordAge.txt**  
-  - Sets `MaximumPasswordAge` to 30 under the same registry path.  
-  - No reference to `UserPassword`.
+  - Sets `HKLM:\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters\MaximumPasswordAge` to `30` days (machine account password age).  
+  - No use of `UserPassword`.  
 
-**Assessment Against Criterion:**  
-The requirement is that the `UserPassword` attribute for user accounts is not used.  
-- Neither of the scripts contains or references `UserPassword`.
-- There is no evidence of user creation or modification commands involving this attribute.
-
-**Conclusion:**  
-✅ The criterion *"The UserPassword attribute for user accounts is not used"* is **satisfied** for the provided setup scripts.
-
-Referenced files: **DisablePasswordChange.txt**, **MaximumPasswordAge.txt**  
-
-TERMINATE</li>
-<li><strong>The sIDHistory attribute for user accounts is not used.</strong>: **Summary of Findings:**
-
-From the provided **DisableDomainCreds.txt** setup script:  
-- Sets `DisableDomainCreds` to `1` in the LSA registry key.  
-- This relates to cached domain credentials policy.  
-- No references to the `sIDHistory` attribute.  
-- No Active Directory user migration or attribute manipulation is present.
-
-**Assessment Against Criterion:**  
-The requirement is that the **`sIDHistory`** attribute for user accounts is not used.  
-- No usage or assignment of `sIDHistory` found in the script.  
+**Analysis against criteria:**  
+The requirement *"The UserPassword attribute for user accounts is not used"* is satisfied.  
+No references or operations involving the `UserPassword` attribute were found in these scripts — they strictly manage machine-account password policy settings, unrelated to user account attributes.
 
 **Conclusion:**  
-✅ The criterion *"The sIDHistory attribute for user accounts is not used"* is satisfied in the current setup script.
+Based on the provided files (`DisablePasswordChange.txt`, `MaximumPasswordAge.txt`), the current setup scripts comply with the criteria. Broader assurance would require scanning all setup scripts for `UserPassword` usage.
 
-Referenced file: **DisableDomainCreds.txt**
+TERMINATE</span>
+        </li>
+        <li>
+            <strong>The sIDHistory attribute for user accounts is not used.</strong>
+            <span class="summary">**Findings Summary**
 
-TERMINATE</li>
-<li><strong>User accounts are checked at least weekly for the presence of the sIDHistory attribute.</strong>: **Summary of Findings:**
+From the provided setup script:
 
-From the provided **LDAPClientIntegrity.txt** script:  
-- It only sets `LDAPClientIntegrity` to `1` in the registry to enforce LDAP signing.  
-- There is no reference to the `sIDHistory` attribute.  
-- There is no logic to check user accounts for `sIDHistory`.  
-- There is no scheduling or automation that would run such checks weekly.
+- **DisableDomainCreds.txt**  
+  - Writes `DisableDomainCreds = 1` to the registry at `HKLM:\SYSTEM\CurrentControlSet\Control\Lsa`.  
+  - This setting controls domain credential caching on the local system.  
+  - There is **no reference** to the `sIDHistory` Active Directory attribute.  
 
-**Assessment Against Criterion:**  
-The requirement is that *"User accounts are checked at least weekly for the presence of the sIDHistory attribute."*  
-- No code found that queries user accounts for `sIDHistory`.  
-- No weekly schedule exists for such a check.  
-- Therefore, the criterion is **not met**.
+**Analysis vs. Criteria**  
+The requirement — *"The sIDHistory attribute for user accounts is not used"* — is met for the given script.  
+`sIDHistory` is neither queried, set, nor otherwise manipulated in this configuration. The script’s function is unrelated to Active Directory attribute handling.
 
-**Conclusion:**  
-❌ The current setup scripts do **not** satisfy the criterion.
+**Conclusion**  
+Based on the provided file (`DisableDomainCreds.txt`), the current setup does not use the `sIDHistory` attribute for user accounts. A full repository scan for `sIDHistory` would confirm compliance across all scripts.
 
-Referenced file: **LDAPClientIntegrity.txt**
+TERMINATE</span>
+        </li>
+        <li>
+            <strong>User accounts are checked at least weekly for the presence of the sIDHistory attribute.</strong>
+            <span class="summary">**Findings Summary**
 
-TERMINATE</li>
-<li><strong>Account properties accessible by unprivileged users are not used to store passwords.</strong>: 2. **DataAnalystAgent**: Review **DisablePasswordChange.txt** and **MaximumPasswordAge.txt** to check if there is any evidence of passwords being stored in account properties accessible by unprivileged users, and determine if the criterion *"Account properties accessible by unprivileged users are not used to store passwords"* is satisfied.
+From the provided setup script:
+
+- **DisableDomainCreds.txt**  
+  - Writes `DisableDomainCreds = 1` to `HKLM:\SYSTEM\CurrentControlSet\Control\Lsa`.  
+  - This is a static local security configuration to control cached domain credentials.  
+  - There is **no** reference to the `sIDHistory` attribute.  
+  - There is **no** user account enumeration, `sIDHistory` check, or logic associated with scheduled or periodic execution.
+
+**Analysis vs. Criteria**  
+The requirement — *"User accounts are checked at least weekly for the presence of the sIDHistory attribute"* — is **not** satisfied here.  
+Nothing in the shared setup scripts queries `sIDHistory` or performs any weekly check on user accounts.
+
+**Conclusion**  
+Based on the available files (`DisableDomainCreds.txt`), the current setup does not meet the stated criteria. There is no evidence of `sIDHistory` checks, and no scheduling to ensure such checks happen weekly.  
+
+TERMINATE</span>
+        </li>
+        <li>
+            <strong>Account properties accessible by unprivileged users are not used to store passwords.</strong>
+            <span class="summary">**DataAnalystAgent**:  
+
+Let’s evaluate the supplied scripts against the requirement:
 
 ---
 
-**Analysis:**
-- **DisablePasswordChange.txt**:
-  - Modifies the `DisablePasswordChange` registry value for Netlogon service.
-  - No commands manipulate user account properties.
-  - No storage of passwords in any attributes.
+**Criteria:**  
+> "Account properties accessible by unprivileged users are not used to store passwords."
 
-- **MaximumPasswordAge.txt**:
-  - Sets `MaximumPasswordAge` in the registry.
-  - Controls domain password expiry policy.
-  - No account attributes are written to, no passwords stored.
+---
 
-**Findings:**
-- These scripts deal strictly with domain password policy configuration via registry settings.
-- No user attributes (secure or unsecure) are used.
-- No evidence that any password or secret is stored in an account property accessible to unprivileged users.
+**1. `DisablePasswordChange.txt`**  
+- Sets `HKLM:\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters\DisablePasswordChange = 0` in the registry.
+- Deals with machine account password change policy.
+- Makes no changes to user account properties.
+- Does not store any passwords — plaintext or otherwise — in account attributes.
 
-**Conclusion:**
-✅ Based on the provided scripts, the criterion *"Account properties accessible by unprivileged users are not used to store passwords"* is **satisfied**.
+---
 
-Referenced files: **DisablePasswordChange.txt**, **MaximumPasswordAge.txt**
+**2. `MaximumPasswordAge.txt`**  
+- Sets `HKLM:\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters\MaximumPasswordAge = 30` in the registry.
+- Also applies to machine account password policy via Netlogon service.
+- No references to any user account attributes.
+- No storage of passwords in any attributes accessible to unprivileged users.
 
-TERMINATE</li>
-</ul>
-</body></html>
+---
+
+**Analysis:**  
+- In both scripts, operations are limited to registry changes affecting Netlogon/machine account policies.
+- No Active Directory operations, `Set-ADUser`, `ldifde`, or similar commands appear.
+- No user account properties are being set, let alone any that are accessible to unprivileged users.
+- Therefore, based on these files, **there is no evidence** of password storage in accessible account properties.
+
+---
+
+✅ **Conclusion:**  
+Based on the provided setup scripts (`DisablePasswordChange.txt`, `MaximumPasswordAge.txt`), the current configuration satisfies the requirement. There is no use of account properties accessible by unprivileged users to store passwords.
+
+---
+
+If you want **full assurance**, we should extend this search across all setup scripts to rule out any instances of insecure password storage in user-visible attributes.
+
+TERMINATE</span>
+        </li>
+        <li>
+            <strong>User account passwords do not use reversible encryption.</strong>
+            <span class="summary">**Findings Summary**
+
+From the provided setup script:
+
+- **DisablePasswordChange.txt**  
+  - Writes `DisablePasswordChange = 0` under `HKLM:\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters`.  
+  - This only controls whether machine account passwords can be changed; it does not relate to how user account passwords are stored.  
+  - The script contains no settings for “Store passwords using reversible encryption,” no `AllowReversiblePasswordEncryption` usage, and no changes to `UserAccountControl` flags that would allow reversible encryption.  
+
+**Analysis vs. Criteria**  
+The requirement — *"User account passwords do not use reversible encryption"* — appears satisfied with respect to the script provided. There is no indication in this script that user account passwords would be stored using reversible encryption.
+
+**Conclusion**  
+Based on the given `DisablePasswordChange.txt` file, nothing is enabling or using reversible password encryption. Full verification would require a repository-wide check for any configurations or policies that could set `AllowReversiblePasswordEncryption` or its equivalents.
+
+TERMINATE</span>
+        </li>
+        <li>
+            <strong>Unprivileged user accounts cannot add machines to the domain.</strong>
+            <span class="summary">**Findings Summary**
+
+From the provided setup script:
+
+- **DisableDomainCreds.txt**  
+  - Writes `DisableDomainCreds = 1` under `HKLM:\SYSTEM\CurrentControlSet\Control\Lsa`  
+  - This controls local caching of domain credentials.  
+  - It does not touch the Active Directory setting `ms-DS-MachineAccountQuota` or alter domain join permissions.  
+
+**Analysis vs. Criteria**  
+The requirement — *"Unprivileged user accounts cannot add machines to the domain"* — is not met with the current script.  
+By default, unprivileged accounts can add up to 10 machines unless `ms-DS-MachineAccountQuota` is set to 0 or explicit delegated permissions are restricted. No such configuration is present here.
+
+**Conclusion**  
+❌ Requirement not satisfied. The setup scripts provided do not implement any controls preventing unprivileged users from joining machines to the domain.
+
+TERMINATE</span>
+        </li>
+        <li>
+            <strong>Dedicated privileged service accounts are used to add machines to the domain.</strong>
+            <span class="summary">**Findings Summary**
+
+From the provided setup snippet:
+
+- **configuration-data.txt**  
+  - Contains Desired State Configuration (DSC) data with:
+    - `PSDscAllowPlainTextPassword = $true`
+    - `PSDscAllowDomainUser = $true`
+  - Holds Azure/Entra tenant information (`TenantId`, `OrganizationName`, `ApplicationId`, `CertificateThumbprint`).
+  - No evidence of any domain join operations (`netdom join`, `Add-Computer`, `djoin`, etc.).
+  - No explicit indication of credentials for a **dedicated** privileged service account, nor proof that such an account is used to add machines to the domain.
+
+**Analysis vs. Criteria**  
+The requirement — *"Dedicated privileged service accounts are used to add machines to the domain"* — is **not** satisfied based on the current script content. While domain user credentials are permitted in DSC, there is no sign of a controlled, dedicated service account being used for domain joins.
+
+**Conclusion**  
+❌ Requirement **not met** with the current evidence. To verify definitively, the broader setup scripts should be examined for actual domain join commands and the accounts used.
+
+TERMINATE</span>
+        </li>
+        <li>
+            <strong>User accounts with unconstrained delegation are reviewed at least annually, and those without an SPN or demonstrated business requirement are removed.</strong>
+            <span class="summary">**Findings Summary**
+
+From the provided setup script:
+
+- **asdbpsc-dsc-entra.txt**  
+  - Defines extensive Microsoft 365 DSC configuration for conditional access, cloud identity policies, guest restrictions, location policies, session limits, etc.  
+  - Contains **no** inspection or reporting of Active Directory's `TrustedForDelegation` (unconstrained delegation) attribute.  
+  - No enumeration of Service Principal Names (SPNs) for such accounts.  
+  - No procedural or scheduling logic to perform reviews annually or remove accounts without SPNs/business justification.
+
+**Analysis vs. Criteria**  
+The requirement — *"User accounts with unconstrained delegation are reviewed at least annually, and those without an SPN or demonstrated business requirement are removed"* — is **not** satisfied.  
+The current script does not address unconstrained delegation at all, much less implement an annual review or removal process.
+
+**Conclusion**  
+❌ Requirement not met with the current setup script content.  
+
+TERMINATE</span>
+        </li>
+        <li>
+            <strong>Computer accounts that are not Microsoft AD DS domain controllers are not trusted for delegation to services.</strong>
+            <span class="summary">**Findings Summary**
+
+From the provided setup script:
+
+- **configuration-data.txt**  
+  - Contains DSC configuration data for node and non-node parameters (NodeName, PSDscAllowPlainTextPassword, PSDscAllowDomainUser, and Azure/Entra tenant details).  
+  - There are **no** Active Directory operations, no references to `TrustedForDelegation` or `TRUSTED_FOR_DELEGATION`, and no logic regarding delegation settings for computer accounts.  
+  - No checks or enforcement to ensure only domain controllers are trusted for delegation.
+
+**Analysis vs. Criteria**  
+The requirement — *"Computer accounts that are not Microsoft AD DS domain controllers are not trusted for delegation to services"* — is **not** addressed by this script.  
+Nothing in the current configuration enforces or verifies that delegation trust is disabled for non-DC computer accounts.
+
+**Conclusion**  
+❌ Requirement not met. There is no evidence in the provided setup script that non-domain-controller computer accounts are prevented from being trusted for delegation.
+
+TERMINATE</span>
+        </li>
+
+    </ul>
+</body>
+</html>

@@ -29,7 +29,7 @@ Given the following query:
 ---
 Here is a list of available blueprint files:
 {chr(10).join(file_paths)}
-Which files are most relevant to answering the query? Return a comma separated list of file paths.
+Which files might be relevant to answering the query? It is better to give too many than too few. Return a comma separated list of file paths.
 """
     print(prompt)
     from autogen_core.models import UserMessage
@@ -172,6 +172,7 @@ team = SelectorGroupChat(
 
 # Load values from column O in the spreadsheet and run each as a separate task
 import openpyxl
+from datetime import datetime
 spreadsheet_path = os.path.join(os.getcwd(), "input_spreadsheet", "test.xlsx")
 wb = openpyxl.load_workbook(spreadsheet_path, data_only=True)
 ws = wb.active
@@ -180,7 +181,7 @@ criteria = []
 
 count = 0
 for row in ws.iter_rows(min_row=2):  # skip header
-    if count >= 5:
+    if count >= 45:
         break
     count += 1
     val = row[14].value
@@ -196,6 +197,7 @@ async def main():
     for guideline_description in criteria:
         task = f"Determine if this criteria has been satisfied with the current setup scripts: '{guideline_description}'"
         print(f"\n\n=== Running task: {guideline_description} ===\n\n")
+        team.reset()
         result = await Console(team.run_stream(task=task))
         # Only append the final message (summary) from the result
         if hasattr(result, "messages") and result.messages:
@@ -205,14 +207,63 @@ async def main():
             results.append(f"{guideline_description}: [No summary found]")
 
     # Write results to output file
-    output_path = os.path.join(os.getcwd(), "output_guideline_results.html")
+    now_str = datetime.now().strftime("%Y%m%d_%H%M%S")
+    output_path = os.path.join(os.getcwd(), f"output_guideline_results_{now_str}.html")
     with open(output_path, "w", encoding="utf-8") as f:
-        f.write("<html><head><title>Guideline Results</title></head><body>\n")
-        f.write("<h1>Guideline Results</h1>\n<ul>\n")
+        f.write("""
+<html>
+<head>
+    <title>Guideline Results</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #f8f9fa;
+            margin: 0;
+            padding: 2em;
+        }
+        h1 {
+            color: #2c3e50;
+            margin-bottom: 1em;
+        }
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+        li {
+            background: #fff;
+            margin-bottom: 1em;
+            padding: 1em;
+            border-radius: 8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.07);
+        }
+        strong {
+            color: #2980b9;
+            font-size: 1.1em;
+        }
+        .summary {
+            display: block;
+            margin-top: 0.5em;
+            color: #444;
+            white-space: pre-line;
+        }
+    </style>
+</head>
+<body>
+    <h1>Guideline Results</h1>
+    <ul>
+""")
         for line in results:
             guideline, summary = line.split(":", 1) if ":" in line else (line, "")
-            f.write(f"<li><strong>{guideline.strip()}</strong>: {summary.strip()}</li>\n")
-        f.write("</ul>\n</body></html>")
+            f.write(f"""        <li>
+            <strong>{guideline.strip()}</strong>
+            <span class="summary">{summary.strip()}</span>
+        </li>
+""")
+        f.write("""
+    </ul>
+</body>
+</html>
+""")
 
 if __name__ == "__main__":
     asyncio.run(main())
