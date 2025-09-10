@@ -127,7 +127,17 @@ load_dotenv()
 # Use asyncio.run(...) if you are running this in a script.
 asyncio.run(Console(team.run_stream(task=task)))
 
-def selector_func(messages: Sequence[BaseAgentEvent | BaseChatMessage]) -> str | None:
-    if messages[-1].source != planning_agent.name:
-        return planning_agent.name
-    return None
+# def selector_func(messages: Sequence[BaseAgentEvent | BaseChatMessage]) -> str | None:
+#     if messages[-1].source != planning_agent.name:
+#         return planning_agent.name
+#     return None
+
+def selector_func(messages):
+	"""
+	custom logic to select next speaker.
+	returns agent name or none to use model selection
+	"""
+	if len(messages) > 0 and messages[-1].source != "Manager":
+		#always return to the manager afer other agents speak
+		return "Manager"
+	return None
