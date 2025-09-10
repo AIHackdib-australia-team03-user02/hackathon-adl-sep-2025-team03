@@ -116,6 +116,7 @@ team = SelectorGroupChat(
     termination_condition=termination,
     selector_prompt=selector_prompt,
     allow_repeated_speaker=True,  # Allow an agent to speak multiple turns in a row.
+    max_turns=10,
 )
 
 guideline_description = "User accounts are not configured with password never expires or password not required."
