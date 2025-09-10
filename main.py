@@ -148,11 +148,22 @@ Make sure the planner agent has assigned tasks before other agents start working
 Only select one agent.
 """
 
+def selector_func(messages):
+	"""
+	custom logic to select next speaker.
+	returns agent name or none to use model selection
+	"""
+	if len(messages) > 0 and messages[-1].source != "PlanningAgent":
+		#always return to the manager afer other agents speak
+		return "PlanningAgent"
+	return None
+
 team = SelectorGroupChat(
     [planning_agent, web_search_agent, data_analyst_agent],
     model_client=model_client,
     termination_condition=termination,
     selector_prompt=selector_prompt,
+    selector_func=selector_func,
     allow_repeated_speaker=True,  # Allow an agent to speak multiple turns in a row.
     max_turns=10,
 )
@@ -164,13 +175,3 @@ load_dotenv()
 
 # Use asyncio.run(...) if you are running this in a script.
 asyncio.run(Console(team.run_stream(task=task)))
-
-def selector_func(messages):
-	"""
-	custom logic to select next speaker.
-	returns agent name or none to use model selection
-	"""
-	if len(messages) > 0 and messages[-1].source != "Manager":
-		#always return to the manager afer other agents speak
-		return "Manager"
-	return None
