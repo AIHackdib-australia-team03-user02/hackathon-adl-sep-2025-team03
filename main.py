@@ -31,14 +31,14 @@ Here is a list of available blueprint files:
 {chr(10).join(file_paths)}
 Which files might be relevant to answering the query? It is better to give too many than too few. Return a comma separated list of file paths.
 """
-    print(prompt)
+    #print(prompt)
     from autogen_core.models import UserMessage
     response = await model_client.create(messages=[UserMessage(role="user", content=prompt, source="user")])
     # Extract content and clean up code block and raw string prefixes
-    print(response.content)    # Remove code block markers
+    #print(response.content)    # Remove code block markers
     content = response.content.split(",")
-    print("Chose files:")
-    print("\n".join(content))
+    #print("Chose files:")
+    #print("\n".join(content))
     contents = []
     for path in content:
         path = path.strip().strip("`").strip('"').strip("'")
@@ -73,6 +73,7 @@ Which files might be relevant to answering the query? It is better to give too m
             contents.append(f"--- {os.path.basename(path)} ---\n{file_content}")
         else:
             contents.append(f"--- {os.path.basename(path)} ---\n[Error reading file: Could not decode with utf-16, utf-8-sig, utf-8, latin-1, ascii, or binary utf-8: {file_content}]")
+    print("\n\n".join(contents))
     return "\n\n".join(contents)
 
 load_dotenv()
@@ -103,7 +104,7 @@ planning_agent = AssistantAgent(
     When assigning tasks, use this format:
     1. <agent> : <task>
 
-    After all tasks are complete, summarize the findings, giving references to the file-names that you referred to, and end with "TERMINATE".
+    After all tasks are complete, summarize the findings, giving references to the file-names that you referred to, and end with "GREEN" if it meets the criteria, or "RED" if it doesn't, then finally "TERMINATE".
     """,
 )
 
@@ -121,13 +122,11 @@ web_search_agent = AssistantAgent(
 
 data_analyst_agent = AssistantAgent(
     "DataAnalystAgent",
-    description="An agent for performing calculations.",
+    description="An agent for analysing criteria. Please provide the full scripts for me.",
     model_client=model_client,
     tools=[],
     system_message="""
-    You are a data analyst.
-    Given the tasks you have been assigned, you should analyze the data and provide results using the tools provided.
-    If you have not seen the data, ask for it.
+    Once scripts have been provided, analyse whether there is evidence of the query criteria being satisfied.
     """,
 )
 
@@ -181,7 +180,7 @@ criteria = []
 
 count = 0
 for row in ws.iter_rows(min_row=2):  # skip header
-    if count >= 45:
+    if count >= 5:
         break
     count += 1
     val = row[14].value
@@ -253,8 +252,9 @@ async def main():
     <ul>
 """)
         for line in results:
+            green = "GREEN" in line
             guideline, summary = line.split(":", 1) if ":" in line else (line, "")
-            f.write(f"""        <li>
+            f.write(f"""        <li style="background: {'#d4edda' if green else '#f8d7da'};">
             <strong>{guideline.strip()}</strong>
             <span class="summary">{summary.strip()}</span>
         </li>
