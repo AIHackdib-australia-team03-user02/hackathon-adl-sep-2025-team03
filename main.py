@@ -96,14 +96,14 @@ planning_agent = AssistantAgent(
     Your job is to break down complex tasks into smaller, manageable subtasks.
     Your team members are:
         SearchBlueprintAgent: Searches for information in the design of the system
-        DataAnalystAgent: Performs calculations
+        DataAnalystAgent: Analyses the information given
 
     You only plan and delegate tasks - you do not execute them yourself.
 
     When assigning tasks, use this format:
     1. <agent> : <task>
 
-    After all tasks are complete, summarize the findings, giving references to the files that demonstrate compliance, and end with "TERMINATE".
+    After all tasks are complete, summarize the findings, giving references to the file-names that you referred to, and end with "TERMINATE".
     """,
 )
 
@@ -116,7 +116,6 @@ web_search_agent = AssistantAgent(
     You are a document search agent.
     Your only tool is search_tool - use it to find information.
     You make only one search call at a time.
-    Once you have the results, you never do calculations based on them.
     """,
 )
 
@@ -160,6 +159,8 @@ def selector_func(messages):
 
 team = SelectorGroupChat(
     [planning_agent, web_search_agent, data_analyst_agent],
+
+    #[planning_agent, web_search_agent],
     model_client=model_client,
     termination_condition=termination,
     selector_prompt=selector_prompt,
@@ -168,10 +169,50 @@ team = SelectorGroupChat(
     max_turns=10,
 )
 
-guideline_description = "User accounts are not configured with password never expires or password not required."
-task = f"Determine if this criteria has been satisfied with the current blueprint design: '{guideline_description}'"
+
+# Load values from column O in the spreadsheet and run each as a separate task
+import openpyxl
+spreadsheet_path = os.path.join(os.getcwd(), "input_spreadsheet", "test.xlsx")
+wb = openpyxl.load_workbook(spreadsheet_path, data_only=True)
+ws = wb.active
+# Column O is the 15th column (index 14)
+criteria = []
+
+count = 0
+for row in ws.iter_rows(min_row=2):  # skip header
+    if count >= 5:
+        break
+    count += 1
+    val = row[14].value
+    if val and str(val).strip():
+        criteria.append(str(val).strip())
 
 load_dotenv()
 
-# Use asyncio.run(...) if you are running this in a script.
-asyncio.run(Console(team.run_stream(task=task)))
+
+
+async def main():
+    results = []
+    for guideline_description in criteria:
+        task = f"Determine if this criteria has been satisfied with the current setup scripts: '{guideline_description}'"
+        print(f"\n\n=== Running task: {guideline_description} ===\n\n")
+        result = await Console(team.run_stream(task=task))
+        # Only append the final message (summary) from the result
+        if hasattr(result, "messages") and result.messages:
+            final_message = result.messages[-1].content
+            results.append(f"{guideline_description}: {final_message}")
+        else:
+            results.append(f"{guideline_description}: [No summary found]")
+
+    # Write results to output file
+    output_path = os.path.join(os.getcwd(), "output_guideline_results.html")
+    with open(output_path, "w", encoding="utf-8") as f:
+        f.write("<html><head><title>Guideline Results</title></head><body>\n")
+        f.write("<h1>Guideline Results</h1>\n<ul>\n")
+        for line in results:
+            guideline, summary = line.split(":", 1) if ":" in line else (line, "")
+            f.write(f"<li><strong>{guideline.strip()}</strong>: {summary.strip()}</li>\n")
+        f.write("</ul>\n</body></html>")
+
+if __name__ == "__main__":
+    asyncio.run(main())

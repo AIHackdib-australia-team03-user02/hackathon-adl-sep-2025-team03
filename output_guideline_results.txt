@@ -1,0 +1,69 @@
+The board of directors or executive committee defines clear roles and responsibilities for cybersecurity both within the board of directors or executive committee and broadly within their organisation.: **Summary of findings**  
+
+- **SearchBlueprintAgent** reviewed `configuration-data.txt` and found only system configuration items (tenant IDs, domains, application IDs, certificate thumbprints).  
+- No content was found relating to governance, role assignments, or responsibilities defined by the board of directors or executive committee for cybersecurity either within leadership or throughout the organisation.  
+
+- **DataAnalystAgent** confirmed that with the evidence presented, the criterion:  
+> "The board of directors or executive committee defines clear roles and responsibilities for cybersecurity both within the board of directors or executive committee and broadly within their organisation"  
+is **not satisfied** or at least cannot be confirmed as satisfied based on the current blueprint file.
+
+**Reference:** `configuration-data.txt` – contains only technical parameters, no governance or role/responsibility definitions.
+
+TERMINATE
+The board of directors or executive committee ensures that cybersecurity is integrated throughout all business functions within their organisation.: **Summary of findings**  
+
+- **SearchBlueprintAgent** reviewed `configuration-data.txt` and found only technical system configuration data — no governance, policy, or leadership actions related to cybersecurity integration across business functions.  
+
+- **DataAnalystAgent** confirmed that there is no evidence the board of directors or executive committee ensures cybersecurity is integrated throughout all business functions.  
+  - No indication of board-level oversight in integrating cybersecurity into areas such as operations, finance, HR, or other organisational functions.  
+  - No policy statements, strategic directives, or organisational frameworks showing cybersecurity integration beyond technical settings were found.
+
+**Reference:** `configuration-data.txt` — contains only system parameters; no governance or integration directives.
+
+**Conclusion:** The criterion is **not satisfied / cannot be confirmed** with the provided blueprint content.
+
+TERMINATE
+The board of directors or executive committee ensures the cybersecurity strategy for their organisation is aligned with the overarching strategic direction and business strategy for their organisation.: **Summary of findings**  
+
+- **SearchBlueprintAgent** reviewed `configuration-data.txt` and found that it only contains technical parameters (node names, DSC settings, tenant info, application IDs, certificate thumbprints).  
+- No references were found to a cybersecurity strategy, its alignment with organisational strategy, or any board/executive oversight.  
+
+- **DataAnalystAgent** analysed the extracted content and confirmed:  
+  - There is no evidence of a documented cybersecurity strategy.  
+  - No indication that the board or executive committee ensures alignment with the overarching strategic direction or business strategy.  
+
+**Reference:** `configuration-data.txt` – contains only technical configuration data, no governance or strategic alignment documentation.
+
+**Conclusion:** The criterion is **not satisfied / cannot be confirmed** based on the current blueprint content.
+
+TERMINATE
+The board of directors or executive committee seeks regular briefings or reporting on the cybersecurity posture of their organisation, as well as the threat environment in which they operate, from internal and external subject matter experts.: **Summary of findings**  
+
+- **SearchBlueprintAgent** reviewed `configuration-data.txt` and confirmed it contains only technical settings and identifiers (node names, DSC parameters, tenant IDs, application IDs, certificate thumbprints).  
+- No governance processes, meeting schedules, reporting workflows, or evidence of board/executive briefings from internal or external SMEs were found.  
+
+- **DataAnalystAgent** determined:  
+  - There is no indication of regular briefings or reports to the board or executive committee about cybersecurity posture or the threat environment.  
+  - No mention of internal or external subject matter experts providing input.  
+  - The available content does not demonstrate that the criterion requirements are met.  
+
+**Reference:** `configuration-data.txt` – contains only system configuration data; no governance or reporting evidence.
+
+**Conclusion:** The criterion is **not satisfied / cannot be confirmed** based on the current blueprint content.
+
+TERMINATE
+The board of directors or executive committee champions a positive cybersecurity culture within their organisation, including through leading by example.: **Summary of findings**  
+
+- **SearchBlueprintAgent** examined `configuration-data.txt` and found only technical configuration data (node settings, DSC parameters, tenant/app IDs, certificate thumbprints).  
+- There was **no evidence** of board/executive initiatives to promote cybersecurity culture or lead by example.  
+
+- **DataAnalystAgent** confirmed:  
+  - Nothing in the content indicates active championing of a positive cybersecurity culture.  
+  - No programs, communications, or leadership actions showing “leading by example” were identified.  
+  - The available blueprint material does not address cultural aspects or board/executive involvement in setting tone and example.  
+
+**Reference:** `configuration-data.txt` – contains technical data only; no governance or cultural leadership information.  
+
+**Conclusion:** The criterion is **not satisfied / cannot be confirmed** based on the current blueprint content.  
+
+TERMINATE

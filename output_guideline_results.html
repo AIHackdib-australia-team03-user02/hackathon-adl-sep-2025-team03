@@ -1,0 +1,117 @@
+<html><head><title>Guideline Results</title></head><body>
+<h1>Guideline Results</h1>
+<ul>
+<li><strong>User accounts are not configured with password never expires or password not required.</strong>: **Summary of Findings:**
+
+From the files reviewed:
+
+- **DisablePasswordChange.txt**  
+  - Sets `DisablePasswordChange` to `0` in `HKLM:\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters`.  
+  - This allows password changes for computer accounts (not disabling them), and does not configure “password never expires” for user accounts.
+
+- **MaximumPasswordAge.txt**  
+  - Sets `MaximumPasswordAge` to `30`, meaning passwords expire every 30 days.  
+  - This reinforces password expiration rather than disabling it.
+
+**Assessment Against Criterion:**  
+The requirement is that user accounts should **not** be configured with:
+1. Password never expires  
+2. Password not required  
+
+Neither script configures any such insecure settings. Both enforce password expiration and do not disable password requirements.
+
+**Conclusion:**  
+✅ The current setup scripts satisfy the criterion: *"User accounts are not configured with password never expires or password not required."*  
+
+Referenced files: **DisablePasswordChange.txt**, **MaximumPasswordAge.txt**  
+
+TERMINATE</li>
+<li><strong>The UserPassword attribute for user accounts is not used.</strong>: **Summary of Findings:**
+
+From the provided setup scripts:
+
+- **DisablePasswordChange.txt**  
+  - Adjusts `DisablePasswordChange` under `HKLM:\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters`.  
+  - No mention of `UserPassword` or any LDAP/user attribute.
+
+- **MaximumPasswordAge.txt**  
+  - Sets `MaximumPasswordAge` to 30 under the same registry path.  
+  - No reference to `UserPassword`.
+
+**Assessment Against Criterion:**  
+The requirement is that the `UserPassword` attribute for user accounts is not used.  
+- Neither of the scripts contains or references `UserPassword`.
+- There is no evidence of user creation or modification commands involving this attribute.
+
+**Conclusion:**  
+✅ The criterion *"The UserPassword attribute for user accounts is not used"* is **satisfied** for the provided setup scripts.
+
+Referenced files: **DisablePasswordChange.txt**, **MaximumPasswordAge.txt**  
+
+TERMINATE</li>
+<li><strong>The sIDHistory attribute for user accounts is not used.</strong>: **Summary of Findings:**
+
+From the provided **DisableDomainCreds.txt** setup script:  
+- Sets `DisableDomainCreds` to `1` in the LSA registry key.  
+- This relates to cached domain credentials policy.  
+- No references to the `sIDHistory` attribute.  
+- No Active Directory user migration or attribute manipulation is present.
+
+**Assessment Against Criterion:**  
+The requirement is that the **`sIDHistory`** attribute for user accounts is not used.  
+- No usage or assignment of `sIDHistory` found in the script.  
+
+**Conclusion:**  
+✅ The criterion *"The sIDHistory attribute for user accounts is not used"* is satisfied in the current setup script.
+
+Referenced file: **DisableDomainCreds.txt**
+
+TERMINATE</li>
+<li><strong>User accounts are checked at least weekly for the presence of the sIDHistory attribute.</strong>: **Summary of Findings:**
+
+From the provided **LDAPClientIntegrity.txt** script:  
+- It only sets `LDAPClientIntegrity` to `1` in the registry to enforce LDAP signing.  
+- There is no reference to the `sIDHistory` attribute.  
+- There is no logic to check user accounts for `sIDHistory`.  
+- There is no scheduling or automation that would run such checks weekly.
+
+**Assessment Against Criterion:**  
+The requirement is that *"User accounts are checked at least weekly for the presence of the sIDHistory attribute."*  
+- No code found that queries user accounts for `sIDHistory`.  
+- No weekly schedule exists for such a check.  
+- Therefore, the criterion is **not met**.
+
+**Conclusion:**  
+❌ The current setup scripts do **not** satisfy the criterion.
+
+Referenced file: **LDAPClientIntegrity.txt**
+
+TERMINATE</li>
+<li><strong>Account properties accessible by unprivileged users are not used to store passwords.</strong>: 2. **DataAnalystAgent**: Review **DisablePasswordChange.txt** and **MaximumPasswordAge.txt** to check if there is any evidence of passwords being stored in account properties accessible by unprivileged users, and determine if the criterion *"Account properties accessible by unprivileged users are not used to store passwords"* is satisfied.
+
+---
+
+**Analysis:**
+- **DisablePasswordChange.txt**:
+  - Modifies the `DisablePasswordChange` registry value for Netlogon service.
+  - No commands manipulate user account properties.
+  - No storage of passwords in any attributes.
+
+- **MaximumPasswordAge.txt**:
+  - Sets `MaximumPasswordAge` in the registry.
+  - Controls domain password expiry policy.
+  - No account attributes are written to, no passwords stored.
+
+**Findings:**
+- These scripts deal strictly with domain password policy configuration via registry settings.
+- No user attributes (secure or unsecure) are used.
+- No evidence that any password or secret is stored in an account property accessible to unprivileged users.
+
+**Conclusion:**
+✅ Based on the provided scripts, the criterion *"Account properties accessible by unprivileged users are not used to store passwords"* is **satisfied**.
+
+Referenced files: **DisablePasswordChange.txt**, **MaximumPasswordAge.txt**
+
+TERMINATE</li>
+</ul>
+</body></html>
