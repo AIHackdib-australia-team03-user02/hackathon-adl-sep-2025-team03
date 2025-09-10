@@ -1,13 +1,4 @@
-# # Install AgentChat and OpenAI client from Extensions
-# pip install -U "autogen-agentchat" "autogen-ext[openai]" "autogen-ext[azure]"
-
 from autogen_core.models import UserMessage
-from autogen_ext.auth.azure import AzureTokenProvider
-from autogen_ext.models.openai import AzureOpenAIChatCompletionClient
-from azure.identity import DefaultAzureCredential
-import asyncio
-from typing import List, Sequence
-
 from autogen_agentchat.agents import AssistantAgent, UserProxyAgent
 from autogen_agentchat.conditions import MaxMessageTermination, TextMentionTermination
 from autogen_agentchat.messages import BaseAgentEvent, BaseChatMessage
@@ -15,6 +6,8 @@ from autogen_agentchat.teams import SelectorGroupChat
 from autogen_agentchat.ui import Console
 from autogen_ext.models.openai import AzureOpenAIChatCompletionClient
 from dotenv import load_dotenv
+from typing import List, Sequence
+import asyncio
 import os
 
 
