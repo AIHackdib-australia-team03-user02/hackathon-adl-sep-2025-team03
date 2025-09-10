@@ -1,106 +1,171 @@
 # agents/supervisor.py
 from __future__ import annotations
 from autogen import AssistantAgent
-from typing import Optional, List, Dict, Any
-import json, textwrap
+from typing import Optional, List, Dict, Any, Tuple
+import textwrap, importlib
+from datetime import datetime
+
+# Evidence (gold vs test)
+blueprint_io = importlib.import_module("utils.blueprint_io")
+evidence_summary = getattr(blueprint_io, "evidence_summary")
+decide_status_from_evidence = getattr(blueprint_io, "decide_status_from_evidence")
+
+# SSP helpers
+ssp_excel = importlib.import_module("utils.ssp_excel")
+read_rows = getattr(ssp_excel, "read_rows")
+write_outcome_pqr = getattr(ssp_excel, "write_outcome_pqr")
+safe_save = getattr(ssp_excel, "safe_save")
+
+# Selector + tool wrappers (kept minimal; owner selection only)
+def make_selector_agent(llm_cfg):
+    return AssistantAgent("selector_agent", llm_config=llm_cfg,
+        system_message="Select the most appropriate owner for a control based on its description. "
+                       "Return JSON: {\"agent\":\"policy|hardening|monitoring|crypto|network\",\"reason\":\"...\"}")
+
+class AgentTool:
+    def __init__(self, agent): self.agent = agent
+    def __call__(self, prompt: str, history: List[str] | None = None) -> str:
+        msgs = [{"role":"user","content":f"[history] {h}"} for h in (history or [])[-5:]]
+        msgs.append({"role":"user","content":prompt})
+        out = self.agent.generate_reply(messages=msgs)
+        return (out or "").strip()
+
+class GroupChatTool:
+    def __init__(self, agents, _llm_cfg=None): self.agents = agents
+    def run(self, task: str, history: List[str] | None = None, max_iterations: int = 3) -> str:
+        # very light stub that just calls the first agent
+        msgs = [{"role":"user","content":f"[history] {h}"} for h in (history or [])[-5:]]
+        msgs.append({"role":"user","content":task})
+        out = self.agents[0].generate_reply(messages=msgs)
+        return (out or "").strip()
 
 SUPERVISOR_SYSTEM = (
-    "You are SupervisorAgent. Intake a user request, orchestrate sub-agents, "
-    "and synthesize a final report with Comply/Partial/Gap + remediation and citations."
+    "You are SupervisorAgent. For each SSP row, write P (owner), Q (Implementation Status), "
+    "and R (Implementation Comments). Outcomes are decided from the TEST system only."
 )
 
-def make_supervisor(llm_cfg, ingestion, policy, hardening, monitoring, crypto, network, docgen):
+def make_supervisor(
+    llm_cfg: Optional[Dict[str, Any]],
+    ingestion: Optional[AssistantAgent],
+    policy: AssistantAgent,
+    hardening: AssistantAgent,
+    monitoring: AssistantAgent,
+    crypto: AssistantAgent,
+    network: AssistantAgent,
+    docgen: AssistantAgent,
+):
     sup = AssistantAgent(name="supervisor", llm_config=llm_cfg, system_message=SUPERVISOR_SYSTEM)
 
-    def _ask(agent: AssistantAgent, prompt: str) -> str:
-        try:
-            return agent.generate_reply(messages=[{"role":"user","content": prompt}]) or ""
-        except Exception as e:
-            return f"[ERROR from {agent.name}: {e}]"
+    def _choose_entity(agent_choice: str) -> str:
+        return {
+            "policy":     "Policy Owner",
+            "hardening":  "Platform/Ops",
+            "monitoring": "SecOps",
+            "crypto":     "Security Architecture",
+            "network":    "Network Ops",
+        }.get(agent_choice, "Owner")
 
-    @sup.register_for_execution(name="run")
-    def run(task: str, files: Optional[List[str]] = None, repo_url: Optional[str] = None, repo_branch: str = "main", repo_subdir: Optional[str] = None,policy_paths: Optional[List[str]] = None,app_paths: Optional[List[str]] = None,) -> Dict[str, Any]:
-        files = files or []
-        # 1) Ingestion: summarise what we have
-        ing_prompt = textwrap.dedent(f"""
-        Task: {task}
-        Sources: {files}
-        Please list documents found and a short summary per doc. Return concise markdown.
+    def _route_and_choose_owner(selector: AssistantAgent, control_id: str, description: str, history: List[str]) -> str:
+        sel_prompt = textwrap.dedent(f"""
+        Select the best owner for this control.
+        Control: {control_id}
+        Description: {description}
+        Choose ONE of: policy, hardening, monitoring, crypto, network.
+        Return JSON: {{"agent":"<one of the five>","reason":"..."}}.
         """).strip()
-        ing_summary = _ask(ingestion, ing_prompt)
+        raw = selector.generate_reply(messages=[{"role":"user","content":sel_prompt}]) or ""
+        s = raw.lower()
+        if   "\"policy\""     in s or "policy"     in s: agent_choice = "policy"
+        elif "\"crypto\""     in s or "crypto"     in s: agent_choice = "crypto"
+        elif "\"network\""    in s or "network"    in s: agent_choice = "network"
+        elif "\"monitoring\"" in s or "monitoring" in s: agent_choice = "monitoring"
+        else:                                          agent_choice = "hardening"
+        return _choose_entity(agent_choice)
 
-        # 2) Policy check
-        pol_prompt = textwrap.dedent(f"""
-        Using the following context, assess policy coverage vs ISM/IRAP and note gaps.
-        Context:
-        {ing_summary}
-        Output JSON with keys: coverage, gaps[], owners?, freshness_issues?.
-        """).strip()
-        pol_json = _ask(policy, pol_prompt)
+    def _remediation_for(control_id: str) -> str:
+        cid = control_id.upper()
+        if cid == "ISM-1955":
+            return "Set MaximumPasswordAge ≤ 30 days and rotate any compromised/suspected credentials."
+        return "Provide configuration/evidence to meet the control and re-run validation."
 
-        # 3) Hardening / Monitoring / Crypto quick passes
-        hard_json = _ask(hardening, "Evaluate baseline configs vs ISM hardening. Output JSON: findings[].")
-        mon_json  = _ask(monitoring, "Assess logging coverage, retention, alerts. Output JSON summary.")
-        cry_json  = _ask(crypto, "Assess crypto (TLS/SSH/IPsec) vs ISM crypto controls. Output JSON findings[].")
-        net_json  = _ask(network, "Assess network segmentation/NSG/Firewall posture vs ISM. Output JSON findings[].")
+    @sup.register_for_execution(name="run_ssp")
+    def run_ssp(
+        ism_pdf: str,
+        ssp_xlsx_in: str,
+        ssp_xlsx_out: str,
+        gold_blueprint: str,
+        test_system_path: Optional[str] = None,
+        max_rows: Optional[int] = None,
+    ) -> Dict[str, Any]:
 
-        # 4) Ask docgen to synthesize markdown sections
-        doc_prompt = textwrap.dedent(f"""
-        Build three markdown sections from the JSON and notes below:
-        - Policy Assessment
-        - Compliance Summary (Comply/Partial/Gap table)
-        - Remediation Plan (prioritised)
+        wb, ws, rows, colmap = read_rows(ssp_xlsx_in)
+        ws.cell(row=1, column=max(colmap.values()) + 1,
+                value=f"Filled by supervisor at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
-        Inputs:
-        Ingestion:
-        {ing_summary}
+        work_rows = rows if not max_rows or max_rows <= 0 else rows[:max_rows]
 
-        Policy:
-        {pol_json}
+        selector = make_selector_agent(sup.llm_config)
+        tech_team = GroupChatTool([hardening, monitoring, crypto, network], sup.llm_config)
+        policy_tool = AgentTool(policy)
 
-        Hardening:
-        {hard_json}
+        written_cells: List[str] = []
+        filled = 0
 
-        Monitoring:
-        {mon_json}
+        for r in work_rows:
+            cid_raw = (r.get("id_raw") or "").strip()
+            cid_up  = (r.get("id_upper") or "").strip()
+            desc    = r.get("description") or ""
+            is_p    = bool(r.get("is_p"))
 
-        Crypto:
-        {cry_json}
+            # Source of truth for applicability is Column I
+            if not is_p:
+                write_outcome_pqr(wb, ws, r["row"], "Owner", "N/A (not P)", "Not applicable to Protected per Column I.", colmap)
+                written_cells.append(f"row {r['row']} → N/A not P ({cid_raw})")
+                filled += 1
+                continue
 
-        Network:
-        {net_json}
-        """).strip()
-        docs_md = _ask(docgen, doc_prompt)
+            # TEST-ONLY evidence (also uses Column O description keywords)
+            ev = evidence_summary(cid_up, gold_path=gold_blueprint, test_path=test_system_path, description=desc)
+            ev["id"] = cid_up
+            ev_status, ev_comment = decide_status_from_evidence(ev)
 
-        # 5) Minimal splitter if docgen returned one big block
-        policy_md = "## Policy Assessment\n\n" + docs_md
-        compliance_md = "## Compliance Summary\n\n" + "(populate from docgen or post-process)"
-        remediation_md = "## Remediation Plan\n\n" + "(populate from docgen or post-process)"
+            # Owner only (do not mix selector text into R)
+            owner = _route_and_choose_owner(selector, cid_up, desc, history=[])
 
-        intermediate = {
-            "task": task,
-            "files": files,
-            "repo_url": repo_url,
-            "notes": "Supervisor orchestration ran.",
-            "summaries": {
-                "ingestion": ing_summary,
-                "policy": pol_json,
-                "hardening": hard_json,
-                "monitoring": mon_json,
-                "crypto": cry_json,
-                "network": net_json,
-            },
+            # Column R rule you requested:
+            # - Comply  -> put what we found (ev_comment). If evidence present but no value, we keep the brief note.
+            # - Gap/Fail-> provide remediation.
+            # - No evidence -> leave blank (R="")
+            final_P = owner
+            final_Q = ev_status
+            final_R = ""
+
+            if ev_status == "Comply":
+                final_R = ev_comment or ""
+            elif ev_status in ("Gap", "Fail"):
+                rem = _remediation_for(cid_up)
+                final_R = (ev_comment + " " + rem).strip() if ev_comment else rem
+            else:
+                # Partial or any other -> treat like "no evidence" for comment purposes
+                final_R = ""
+
+            write_outcome_pqr(wb, ws, r["row"], final_P, final_Q, final_R, colmap)
+            written_cells.append(f"row {r['row']} → P/Q/R ({cid_raw})")
+            filled += 1
+
+        final_out = safe_save(wb, ssp_xlsx_out)
+        return {
+            "rows_written": filled,
+            "sheet": getattr(ws, "title", "Sheet"),
+            "columns": colmap,
+            "output": final_out,
+            "cells": written_cells
         }
-        return {"intermediate": intermediate, "reports": json.dumps({
-            "policy_md": policy_md,
-            "compliance_md": compliance_md,
-            "remediation_md": remediation_md
-        })}
 
     class _Facade:
         def __init__(self, agent: AssistantAgent): self._agent = agent
         def execute_tool(self, name: str, **kwargs):
-            if name == "run": return run(**kwargs)
+            if name == "run_ssp": return run_ssp(**kwargs)
             raise ValueError(f"Unknown tool: {name}")
 
     return _Facade(sup)
