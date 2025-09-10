@@ -12,30 +12,68 @@ import os
 
 
 # Note: This example uses mock tools instead of real APIs for demonstration purposes
-def search_blueprint_tool(query: str) -> str:
-    if "password" in query or "age" in query:
-        return r"""
-Function WriteReg {
-    param (
-        [Parameter(Mandatory = $true)]
-        [string]$registryPath
-    )
+import glob
+import ast
+import aiofiles
+async def search_blueprint_tool(query: str) -> str:
+    input_dir = os.path.join(os.getcwd(), "input_files")
+    file_paths = [f for f in glob.glob(f"{input_dir}/**/*.txt", recursive=True)]
+    if not file_paths:
+        return "No blueprint files found."
 
-    If(!(Test-Path $registryPath)) {
-      New-Item -Path $registryPath -Force | Out-Null
-    }
-
-    New-ItemProperty -Path $registryPath -Name MaximumPasswordAge -Value 30 -PropertyType DWORD -Force | Out-Null
-
-}
-
-WriteReg("HKLM:\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters")"""
-    else:
-        return "No data found."
-
-
-def percentage_change_tool(start: float, end: float) -> float:
-    return ((end - start) / start) * 100
+    prompt = f"""
+You are a system blueprint search agent.
+Given the following query:
+---
+{query}
+---
+Here is a list of available blueprint files:
+{chr(10).join(file_paths)}
+Which files are most relevant to answering the query? Return a comma separated list of file paths.
+"""
+    print(prompt)
+    from autogen_core.models import UserMessage
+    response = await model_client.create(messages=[UserMessage(role="user", content=prompt, source="user")])
+    # Extract content and clean up code block and raw string prefixes
+    print(response.content)    # Remove code block markers
+    content = response.content.split(",")
+    print("Chose files:")
+    print("\n".join(content))
+    contents = []
+    for path in content:
+        path = path.strip().strip("`").strip('"').strip("'")
+        file_content = None
+        encodings = ["utf-8", "utf-16", "utf-8-sig", "latin-1"]
+        for encoding in encodings:
+            try:
+                async with aiofiles.open(path, "r", encoding=encoding) as f:
+                    file_content = await f.read()
+                break
+            except Exception as e:
+                print("ERROR: " + str(e))
+                file_content = None
+        # Try ascii with errors ignored as last resort
+        if file_content is None:
+            try:
+                async with aiofiles.open(path, "r", encoding="ascii", errors="ignore") as f:
+                    file_content = await f.read()
+            except Exception as e:
+                print("ERROR: " + str(e))
+                file_content = None
+        # Try binary read and decode as utf-8 ignoring errors
+        if file_content is None:
+            try:
+                async with aiofiles.open(path, "rb") as f:
+                    raw_bytes = await f.read()
+                file_content = raw_bytes.decode("utf-8", errors="ignore")
+            except Exception as e:
+                file_content = None
+                print("ERROR: " + str(e))
+        if file_content is not None:
+            contents.append(f"--- {os.path.basename(path)} ---\n{file_content}")
+        else:
+            contents.append(f"--- {os.path.basename(path)} ---\n[Error reading file: Could not decode with utf-16, utf-8-sig, utf-8, latin-1, ascii, or binary utf-8: {file_content}]")
+    return "\n\n".join(contents)
 
 load_dotenv()
 api_key = os.getenv("API_KEY")
@@ -65,7 +103,7 @@ planning_agent = AssistantAgent(
     When assigning tasks, use this format:
     1. <agent> : <task>
 
-    After all tasks are complete, summarize the findings and end with "TERMINATE".
+    After all tasks are complete, summarize the findings, giving references to the files that demonstrate compliance, and end with "TERMINATE".
     """,
 )
 
@@ -86,7 +124,7 @@ data_analyst_agent = AssistantAgent(
     "DataAnalystAgent",
     description="An agent for performing calculations.",
     model_client=model_client,
-    tools=[percentage_change_tool],
+    tools=[],
     system_message="""
     You are a data analyst.
     Given the tasks you have been assigned, you should analyze the data and provide results using the tools provided.
@@ -126,11 +164,6 @@ load_dotenv()
 
 # Use asyncio.run(...) if you are running this in a script.
 asyncio.run(Console(team.run_stream(task=task)))
-
-# def selector_func(messages: Sequence[BaseAgentEvent | BaseChatMessage]) -> str | None:
-#     if messages[-1].source != planning_agent.name:
-#         return planning_agent.name
-#     return None
 
 def selector_func(messages):
 	"""
