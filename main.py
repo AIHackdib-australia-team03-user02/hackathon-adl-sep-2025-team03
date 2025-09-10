@@ -7,6 +7,9 @@ from autogen_agentchat.ui import Console
 from autogen_ext.models.openai import AzureOpenAIChatCompletionClient
 from dotenv import load_dotenv
 from typing import List, Sequence
+import re
+from autogen_agentchat.messages import BaseAgentEvent, BaseChatMessage
+from typing import Sequence
 import asyncio
 import os
 
@@ -59,13 +62,16 @@ planning_agent = AssistantAgent(
     Your team members are:
         SearchBlueprintAgent: Searches for information in the design of the system
         DataAnalystAgent: Performs calculations
+        AssessorAgent: Gives the final assessment of the system
 
     You only plan and delegate tasks - you do not execute them yourself.
 
     When assigning tasks, use this format:
     1. <agent> : <task>
 
-    After all tasks are complete, summarize the findings and end with "TERMINATE".
+    Do NOT say "TERMINATE" until **AssessorAgent** has posted a JSON verdict.
+After AssessorAgent replies, summarize findings briefly and then end with "TERMINATE".
+
     """,
 )
 
@@ -94,6 +100,24 @@ data_analyst_agent = AssistantAgent(
     """,
 )
 
+assessor_agent = AssistantAgent(
+    "AssessorAgent",
+    description="Issues final Yes/No verdict, remediation steps, and a short summary.",
+    model_client=model_client,
+    system_message="""
+You are the AssessorAgent. Decide PASS/FAIL for the stated criterion using ONLY the evidence
+already surfaced in this conversation (search results, calculations, prior agent messages).
+Be conservative: if evidence is insufficient or ambiguous, return FAIL.
+
+Return ONLY one JSON object (no prose, no code fences) with EXACTLY these keys:
+{
+  "verdict": "Yes" | "No",
+  "remediation": "<how to fix to pass, <=120 words>",
+  "summary": "<what the assessment determined and why, <=120 words>"
+}
+""",
+)
+
 text_mention_termination = TextMentionTermination("TERMINATE")
 max_messages_termination = MaxMessageTermination(max_messages=25)
 termination = text_mention_termination | max_messages_termination
@@ -110,18 +134,46 @@ Make sure the planner agent has assigned tasks before other agents start working
 Only select one agent.
 """
 
-def selector_func(messages):
-	"""
-	custom logic to select next speaker.
-	returns agent name or none to use model selection
-	"""
-	if len(messages) > 0 and messages[-1].source != "PlanningAgent":
-		#always return to the manager afer other agents speak
-		return "PlanningAgent"
-	return None
+ASSIGNMENT_RE = re.compile(r"^\s*\d+\.\s*([A-Za-z_][\w]*)\s*:\s*(.+)$", re.MULTILINE)
+
+def selector_func(messages: Sequence[BaseAgentEvent | BaseChatMessage]) -> str | None:
+    """Planner first → follow latest assignments → then Assessor once → then Planner to wrap up."""
+    if not messages:
+        return "PlanningAgent"
+
+    # Find the latest planner message
+    planner_idxs = [i for i, m in enumerate(messages) if getattr(m, "source", "") == "PlanningAgent"]
+    if not planner_idxs:
+        return "PlanningAgent"
+    last_planner_idx = planner_idxs[-1]
+    last_planner_msg = messages[last_planner_idx]
+    plan_text = str(getattr(last_planner_msg, "content", "") or "")
+    assignments = ASSIGNMENT_RE.findall(plan_text)  # [(AgentName, task), ...]
+
+    # If planner hasn’t assigned anything, let planner speak again (unless they just spoke)
+    if not assignments:
+        if messages[-1] is last_planner_msg:
+            return None
+        return "PlanningAgent"
+
+    # Who has spoken since that plan?
+    spoken_after = [getattr(m, "source", "") for m in messages[last_planner_idx + 1 :]]
+    spoken_set = set(spoken_after)
+
+    # Next unhandled assignment
+    for agent_name, _ in assignments:
+        if agent_name not in spoken_set:
+            return agent_name
+
+    # All assigned agents have spoken — route to Assessor once
+    if "AssessorAgent" not in spoken_set:
+        return "AssessorAgent"
+
+    # Assessor already spoke — return to planner to summarize and TERMINATE
+    return "PlanningAgent"
 
 team = SelectorGroupChat(
-    [planning_agent, web_search_agent, data_analyst_agent],
+    [planning_agent, web_search_agent, data_analyst_agent, assessor_agent],
     model_client=model_client,
     termination_condition=termination,
     selector_prompt=selector_prompt,
