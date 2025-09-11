@@ -1,5 +1,5 @@
 # Use official Python 3.12 image
-FROM python:3.12-slim
+FROM alpine:3.16
 
 # Set working directory
 WORKDIR /app
@@ -8,12 +8,18 @@ WORKDIR /app
 COPY requirements.txt ./
 COPY . ./
 
+RUN apk add libgomp
+RUN apk add python3
+RUN apk add py3-pip
+RUN apk add --virtual build-dependencies build-base gcc wget git pkgconfig
+RUN apk add meson
+
 # Install dependencies
 RUN pip install --upgrade pip && \
     pip install -r requirements.txt
 
 # Set environment variables (if using .env)
-# COPY .env .env
+COPY .env .env
 
 # Default command to run your main script
 CMD ["python", "main.py"]
