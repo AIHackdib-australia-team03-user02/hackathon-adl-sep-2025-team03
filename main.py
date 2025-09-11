@@ -96,15 +96,17 @@ planning_agent = AssistantAgent(
     You are a planning agent.
     Your job is to break down complex tasks into smaller, manageable subtasks.
     Your team members are:
-        SearchBlueprintAgent: Searches for information in the design of the system
+        SearchBlueprintAgent: Searches for information in the design of the system. Provide the query as a string as the parameter.
         DataAnalystAgent: Analyses the information given
+        RemediationAgent: Provides a remediation strategy based on the analysis.
 
     You only plan and delegate tasks - you do not execute them yourself.
 
     When assigning tasks, use this format:
     1. <agent> : <task>
 
-    After all tasks are complete, summarize the findings, giving references to the file-names that you referred to, and end with "GREEN" if it meets the criteria, or "RED" if it doesn't, then finally "TERMINATE".
+    The RemediationAgent should only be assigned a task once the DataAnalystAgent has completed its analysis.
+    After all tasks are complete, summarize the findings in full detail, as the history will not be shown, giving references to the file-names that you referred to, and end with "GREEN" if it meets the criteria, or "RED" if it doesn't, then finally "TERMINATE".
     """,
 )
 
@@ -127,6 +129,16 @@ data_analyst_agent = AssistantAgent(
     tools=[],
     system_message="""
     Once scripts have been provided, analyse whether there is evidence of the query criteria being satisfied.
+    """,
+)
+
+remediation_agent = AssistantAgent(
+    "RemediationAgent",
+    description="An agent for providing a remediation strategy, once the analysis is complete.",
+    model_client=model_client,
+    tools=[],
+    system_message="""
+    Once the analysis has been completed, provide a strategy for remediation - for some criteria, this might involve new scripts being provided, for others it will be policy recommendations.
     """,
 )
 
@@ -156,17 +168,7 @@ def selector_func(messages):
 		return "PlanningAgent"
 	return None
 
-team = SelectorGroupChat(
-    [planning_agent, web_search_agent, data_analyst_agent],
 
-    #[planning_agent, web_search_agent],
-    model_client=model_client,
-    termination_condition=termination,
-    selector_prompt=selector_prompt,
-    selector_func=selector_func,
-    allow_repeated_speaker=True,  # Allow an agent to speak multiple turns in a row.
-    max_turns=10,
-)
 
 
 # Load values from column O in the spreadsheet and run each as a separate task
@@ -180,7 +182,7 @@ criteria = []
 
 count = 0
 for row in ws.iter_rows(min_row=2):  # skip header
-    if count >= 5:
+    if count >= 10:
         break
     count += 1
     val = row[14].value
@@ -196,11 +198,25 @@ async def main():
     for guideline_description in criteria:
         task = f"Determine if this criteria has been satisfied with the current setup scripts: '{guideline_description}'"
         print(f"\n\n=== Running task: {guideline_description} ===\n\n")
-        team.reset()
+        team = SelectorGroupChat(
+            [planning_agent, web_search_agent, data_analyst_agent, remediation_agent],
+
+            #[planning_agent, web_search_agent],
+            model_client=model_client,
+            termination_condition=termination,
+            selector_prompt=selector_prompt,
+            selector_func=selector_func,
+            allow_repeated_speaker=True,  # Allow an agent to speak multiple turns in a row.
+            max_turns=7,
+        )
+        
+
         result = await Console(team.run_stream(task=task))
+        team.reset()
         # Only append the final message (summary) from the result
         if hasattr(result, "messages") and result.messages:
-            final_message = result.messages[-1].content
+            final_message = result.messages[-2].content
+            final_message += "\n\n" + result.messages[-1].content
             results.append(f"{guideline_description}: {final_message}")
         else:
             results.append(f"{guideline_description}: [No summary found]")
