@@ -56,11 +56,11 @@ def main():
     supervisor = make_supervisor(llm_cfg, None, policy, hardening, monitoring, crypto, network, docgen)
 
     # Paths → use FOLDERS (not zips)
-    ism_pdf          = r".\standards\Information security manual (March 2025).pdf"
-    ssp_xlsx_in      = r".\standards\System security plan annex template (March 2025).xlsx"
-    ssp_xlsx_out     = r".\systems\SSP_filled.xlsx"   # <— save into ./systems as requested
-    gold_blueprint   = r".\standards"                 # folder with static/content/etc
-    test_system_path = r".\systems\test-system"       # your test folder
+    ism_pdf          = r"./standards/Information security manual (March 2025).pdf"
+    ssp_xlsx_in      = r"./standards/System security plan annex template (March 2025).xlsx"
+    ssp_xlsx_out     = r"./systems/SSP_filled.xlsx"   # <— save into ./systems as requested
+    gold_blueprint   = r"./standards"                 # folder with static/content/etc
+    test_system_path = r"./systems/test-system"       # your test folder
 
     res = supervisor.execute_tool(
         "run_ssp",
