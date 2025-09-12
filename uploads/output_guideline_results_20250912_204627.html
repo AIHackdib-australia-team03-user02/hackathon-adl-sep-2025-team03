@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Guideline Results</title>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+        <style>
+            body {
+                font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+                background: linear-gradient(120deg, #f8f9fa 0%, #e3e6ea 100%);
+                margin: 0;
+                padding: 2em;
+            }
+            h1 {
+                color: #1a2636;
+                margin-bottom: 2em;
+                font-weight: 600;
+                font-size: 2.2em;
+            }
+            ul {
+                list-style: none;
+                padding: 0;
+                max-width: 900px;
+                margin: 0 auto;
+            }
+            li {
+                background: #fff;
+                margin-bottom: 2em;
+                padding: 2em 2em 1em 2em;
+                border-radius: 16px;
+                box-shadow: 0 4px 24px rgba(30,40,60,0.08);
+                border-left: 8px solid #4fd18b;
+                transition: box-shadow 0.2s;
+            }
+            li.red {
+                border-left: 8px solid #e74c3c;
+            }
+            .guideline {
+                color: #2980b9;
+                font-size: 1.2em;
+                font-weight: 600;
+                margin-bottom: 1em;
+                display: block;
+            }
+            .summary {
+                margin-top: 0.5em;
+                color: #222;
+                font-size: 1em;
+            }
+            @media (max-width: 600px) {
+                body { padding: 0.5em; }
+                ul { padding: 0; }
+                li { padding: 1em; }
+            }
+            pre, code {
+                background: #f4f6fa;
+                border-radius: 6px;
+                padding: 0.2em 0.5em;
+                font-size: 0.95em;
+            }
+            blockquote {
+                border-left: 4px solid #4fd18b;
+                margin: 1em 0;
+                padding-left: 1em;
+                color: #555;
+                background: #f8f9fa;
+            }
+            table {
+                border-collapse: collapse;
+                width: 100%;
+                margin: 1em 0;
+            }
+            th, td {
+                border: 1px solid #e3e6ea;
+                padding: 0.5em 1em;
+            }
+            th {
+                background: #f4f6fa;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Guideline Results</h1>
+        <ul>
+    <li class=""><span class="guideline">User accounts are not configured with password never expires or password not required.</span><div class="summary"><p>Let's examine each provided script against the compliance criterion:</p>
+
+<hr />
+
+<p><strong>Compliance Criterion</strong>  </p>
+
+<blockquote>
+  <p>User accounts are <strong>not</strong> configured with <code>PasswordNeverExpires</code> or <code>PasswordNotRequired</code>.</p>
+</blockquote>
+
+<hr />
+
+<h3><strong>1. <code>DisablePasswordChange.txt</code></strong></h3>
+
+<ul>
+<li>This script defines a function <code>WriteReg</code> that creates or updates the registry key:
+<code>
+HKLM:\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters
+</code>
+and sets:
+<code>
+DisablePasswordChange = 0
+</code></li>
+<li>Setting <code>DisablePasswordChange</code> to <code>0</code> means <strong>password change is not disabled</strong> — i.e., the system allows password changes.  </li>
+<li>There is <strong>no mention</strong> of <code>PasswordNeverExpires</code> or <code>PasswordNotRequired</code> properties for individual user accounts in this script.</li>
+</ul>
+
+<hr />
+
+<h3><strong>2. <code>MaximumPasswordAge.txt</code></strong></h3>
+
+<ul>
+<li>Similar structure; writes to the same <code>Netlogon\Parameters</code> registry path.</li>
+<li>Sets:
+<code>
+MaximumPasswordAge = 30
+</code></li>
+<li>This configures a <strong>maximum password age of 30 days</strong>. That enforces periodic password expiry and is in line with the requirement that passwords not be set to never expire.</li>
+<li>Again, there is <strong>no reference</strong> to the <code>PasswordNeverExpires</code> or <code>PasswordNotRequired</code> account flags.</li>
+</ul>
+
+<hr />
+
+<h3><strong>Analysis</strong></h3>
+
+<ul>
+<li>Both scripts <strong>interact with system policy via registry keys</strong> related to password policy but:
+<ul>
+<li>They do <strong>not</strong> set <code>PasswordNeverExpires</code> = <code>$True</code> for any account.</li>
+<li>They do <strong>not</strong> set <code>PasswordNotRequired</code> = <code>$True</code> for any account.</li>
+</ul></li>
+<li>In fact:
+<ul>
+<li>Setting <code>MaximumPasswordAge</code> to 30 ensures expiry.</li>
+<li>Setting <code>DisablePasswordChange</code> to <code>0</code> allows password changes.</li>
+</ul></li>
+<li>Neither script creates user accounts nor modifies these specific user flags.</li>
+</ul>
+
+<hr />
+
+<h3><strong>Conclusion</strong></h3>
+
+<p>From the provided scripts:
+- <strong>No evidence</strong> that they configure accounts with <code>PasswordNeverExpires</code> or <code>PasswordNotRequired</code>.
+- The logic present enforces expiry and permits changes, which aligns with the compliance criterion.</p>
+
+<p>✅ <strong>Criterion Satisfied</strong> – On the basis of the provided scripts alone, there is no violation of the stated requirement.</p>
+
+<hr />
+
+<p>If you like, I can also provide a quick additional PowerShell check snippet that could be run to verify no accounts are currently configured with those insecure flags in your environment.<br />
+Do you want me to prepare that?</p>
+
+<p>RemediationAgent : "No remediation is necessary as analysis of <code>DisablePasswordChange.txt</code> and <code>MaximumPasswordAge.txt</code> confirms there are no configurations that set <code>PasswordNeverExpires</code> or <code>PasswordNotRequired</code> for accounts. The settings present enforce password changes and impose a maximum password age of 30 days, which meets the ASD System Security Plan annex criterion."  </p>
+
+<hr />
+
+<p><strong>Summary of Findings</strong><br />
+The two reviewed PowerShell scripts were:</p>
+
+<ul>
+<li><p><strong><code>DisablePasswordChange.txt</code></strong> – Configures the registry so that <code>DisablePasswordChange</code> is set to <code>0</code>, which allows password changes. There is no use of <code>PasswordNeverExpires</code> or <code>PasswordNotRequired</code> flags.</p></li>
+<li><p><strong><code>MaximumPasswordAge.txt</code></strong> – Sets <code>MaximumPasswordAge</code> to <code>30</code> days in the registry, enforcing regular password expiry. Again, no use of the above insecure account flags.</p></li>
+</ul>
+
+<p><strong>Conclusion</strong><br />
+There is no evidence in these scripts that user accounts are configured with <code>PasswordNeverExpires</code> or <code>PasswordNotRequired</code>. Instead, the configurations promote compliance through enforced expiry and permitted password changes.</p>
+
+<p><strong>Status:</strong> <strong>GREEN</strong><br />
+TERMINATE</p>
+</div></li><li class=""><span class="guideline">The UserPassword attribute for user accounts is not used.</span><div class="summary"><p>Alright — let's walk through the analysis in relation to the compliance criterion:</p>
+
+<hr />
+
+<p><strong>Compliance Criterion</strong>  </p>
+
+<blockquote>
+  <p><em>The <code>UserPassword</code> attribute for user accounts is not used.</em></p>
+</blockquote>
+
+<hr />
+
+<h3><strong>1. <code>DisablePasswordChange.txt</code></strong></h3>
+
+<ul>
+<li>Functionality:
+<ul>
+<li>Creates or updates a registry path:<br />
+<code>HKLM:\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters</code></li>
+<li>Sets:
+<code>
+DisablePasswordChange = 0
+</code></li>
+</ul></li>
+<li>Observation:
+<ul>
+<li>No references to any user account property names.</li>
+<li>No mention of the <code>UserPassword</code> attribute.</li>
+<li>Operates only on a machine-level Netlogon registry key, not per-user account properties.</li>
+</ul></li>
+</ul>
+
+<hr />
+
+<h3><strong>2. <code>MaximumPasswordAge.txt</code></strong></h3>
+
+<ul>
+<li>Functionality:
+<ul>
+<li>Creates or updates the same registry path:<br />
+<code>HKLM:\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters</code></li>
+<li>Sets:
+<code>
+MaximumPasswordAge = 30
+</code></li>
+</ul></li>
+<li>Observation:
+<ul>
+<li>As above, no reference to <code>UserPassword</code>.</li>
+<li>This controls password age policy, not direct user attributes.</li>
+</ul></li>
+</ul>
+
+<hr />
+
+<h3><strong>Analysis Against Criterion</strong></h3>
+
+<ul>
+<li>Neither script:
+<ul>
+<li>Retrieves or modifies a <code>UserPassword</code> attribute.</li>
+<li>Contains any Active Directory / LDAP / local account management code that touches per-user password data directly.</li>
+</ul></li>
+<li>Both scripts <strong>only</strong> set domain / machine policy-related registry keys.</li>
+<li>Therefore, based on these scripts, there is <strong>no</strong> use of the <code>UserPassword</code> attribute for user accounts.</li>
+</ul>
+
+<hr />
+
+<h3><strong>Conclusion</strong></h3>
+
+<p>✅ <strong>Criterion satisfied</strong> — The provided PowerShell scripts do not interact with, set, or otherwise use the <code>UserPassword</code> attribute, and thus comply with the ASD System Security Plan annex requirement. </p>
+
+<hr />
+
+<p>If you need, I can help put together a targeted discovery script to confirm across your environment that no other scripts or configurations are referencing <code>UserPassword</code>. That would strengthen the IRAP evidence base. Would you like me to prepare that?</p>
+
+<p>RemediationAgent : "No remediation required. Review of <code>DisablePasswordChange.txt</code> and <code>MaximumPasswordAge.txt</code> confirms there is no use of the <code>UserPassword</code> attribute for any user accounts. Both scripts only modify machine-level Netlogon registry keys (<code>DisablePasswordChange</code> and <code>MaximumPasswordAge</code>) and do not interact with per-user password attributes."</p>
+
+<hr />
+
+<p><strong>Summary of Findings</strong><br />
+- <strong><code>DisablePasswordChange.txt</code></strong> – Writes to <code>HKLM:\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters</code> setting <code>DisablePasswordChange = 0</code>, which is a policy flag, not a user attribute.
+- <strong><code>MaximumPasswordAge.txt</code></strong> – Writes to the same registry path setting <code>MaximumPasswordAge = 30</code>, enforcing password aging policy.
+- Neither script accesses, sets, or references a <code>UserPassword</code> field or per-account password property.</p>
+
+<p><strong>Conclusion</strong><br />
+These scripts do not violate the ASD System Security Plan annex requirement that the <code>UserPassword</code> attribute is not used.</p>
+
+<p><strong>Status:</strong> <strong>GREEN</strong><br />
+TERMINATE</p>
+</div></li><li class=""><span class="guideline">The sIDHistory attribute for user accounts is not used.</span><div class="summary"><p><strong>Analysis</strong></p>
+
+<p><strong>Compliance Criterion:</strong>  </p>
+
+<blockquote>
+  <p><em>The <code>sIDHistory</code> attribute for user accounts is not used.</em></p>
+</blockquote>
+
+<hr />
+
+<p><strong>Search Results Recap:</strong><br />
+The <code>SearchBlueprintAgent</code> indicates that in the set of provided PowerShell scripts, there are <strong>no references</strong> to the <code>sIDHistory</code> attribute. That means:</p>
+
+<ul>
+<li>No <code>Get-ADUser</code>, <code>Set-ADUser</code>, or similar cmdlets involving <code>-Properties sIDHistory</code> or attempts to read/modify this attribute.</li>
+<li>No code paths that query, set, or depend on <code>sIDHistory</code> for authentication, migration, or access purposes.</li>
+</ul>
+
+<hr />
+
+<p><strong>Implications:</strong>
+- If the scripts do not reference or manipulate <code>sIDHistory</code> at all, they cannot be using it to control or grant access.
+- This aligns with the ASD requirement, which aims to prevent the security risks associated with retaining old security identifiers in an account’s SID history.</p>
+
+<hr />
+
+<p><strong>Conclusion:</strong>
+✅ <strong>Criterion satisfied</strong> – Based on the provided scripts, there is no evidence of <code>sIDHistory</code> being used.</p>
+
+<hr />
+
+<p>If you need me to, I can prepare a proactive check you can run in your environment to confirm no accounts have <code>sIDHistory</code> set or in use.<br />
+Do you want me to generate a PowerShell verification snippet for that?</p>
+
+<p>RemediationAgent : "No remediation required. The assessment of the provided PowerShell scripts confirmed that there are no references to, or manipulations of, the <code>sIDHistory</code> attribute for user accounts. This satisfies the ASD System Security Plan annex criterion that the <code>sIDHistory</code> attribute is not used."</p>
+
+<hr />
+
+<p><strong>Summary of Findings</strong><br />
+- <strong>Search Results:</strong> No provided scripts contain any code that queries, sets, or otherwise works with the <code>sIDHistory</code> field.<br />
+- <strong>Risk Mitigation:</strong> Without any such references, there is no risk of leveraging SID history for access control, which aligns with the security intention of this control.<br />
+- <strong>Compliance Status:</strong> The scripts do not make use of the <code>sIDHistory</code> attribute in any way.</p>
+
+<p><strong>Conclusion:</strong><br />
+The provided scripts comply with the control; no remediation is necessary.</p>
+
+<p><strong>Status:</strong> <strong>GREEN</strong><br />
+TERMINATE</p>
+</div></li><li class="red"><span class="guideline">User accounts are checked at least weekly for the presence of the sIDHistory attribute.</span><div class="summary"><p><strong>Analysis</strong></p>
+
+<p><strong>Compliance Criterion:</strong>  </p>
+
+<blockquote>
+  <p><em>User accounts are checked at least weekly for the presence of the <code>sIDHistory</code> attribute.</em></p>
+</blockquote>
+
+<hr />
+
+<p><strong>Provided script/file:</strong> <code>configuration-data.txt</code>  </p>
+
+<p><strong>Contents Summary:</strong>
+- Contains a PowerShell data file defining a DSC (Desired State Configuration) configuration data block.
+- Specifies node details (<code>localhost</code>), DSC parameters (<code>PSDscAllowPlainTextPassword</code>, <code>PSDscAllowDomainUser</code>), and some metadata (TenantId, OrganizationName, ApplicationId, CertificateThumbprint).
+- <strong>No executable script logic</strong> is present in this file.
+- Does not contain cmdlets such as <code>Get-ADUser</code>, <code>Get-MgUser</code>, or LDAP queries.
+- No references to the <code>sIDHistory</code> attribute.
+- No scheduling information or mechanisms.
+- No logic related to checking user accounts, let alone performing such checks at least weekly.</p>
+
+<hr />
+
+<p><strong>Assessment Against Criterion:</strong>
+- The requirement demands:
+  1. Querying user accounts for the presence of <code>sIDHistory</code>.
+  2. Doing so <em>at least weekly</em>.
+- The provided file:
+  - Does <strong>not</strong> query or reference <code>sIDHistory</code>.
+  - Does <strong>not</strong> perform any user account inspection.
+  - Does <strong>not</strong> implement any schedule or recurring tasks.</p>
+
+<hr />
+
+<p><strong>Conclusion:</strong>
+❌ <strong>Criterion not satisfied</strong> – Based on the provided content, there is no evidence that user accounts are being checked for <code>sIDHistory</code>, nor is there any mechanism to ensure such checks occur at least weekly.</p>
+
+<hr />
+
+<p>If you'd like, I can propose a compliant PowerShell script that would check <code>sIDHistory</code> for all accounts and could be run as a scheduled task to meet this requirement. Would you like me to create that?</p>
+
+<p>RemediationAgent : "Implement a scheduled process to query all user accounts for the presence of the <code>sIDHistory</code> attribute at least weekly. For example, use a PowerShell script with <code>Get-ADUser -Filter * -Properties sIDHistory</code> to detect any accounts where <code>sIDHistory</code> is populated, and configure it via Task Scheduler or an automation platform to run every 7 days. Output should be logged, and alerts should be generated if any such accounts are found, to enable prompt review and remediation."</p>
+
+<hr />
+
+<p><strong>Summary of Findings</strong><br />
+- Reviewed <code>configuration-data.txt</code> — it is purely a configuration data file with DSC parameters and metadata.<br />
+- No logic is present to query user accounts or inspect the <code>sIDHistory</code> attribute.<br />
+- No scheduling or recurring checks implemented.<br />
+- No evidence of compliance with the criterion requiring at least weekly checks for <code>sIDHistory</code>.</p>
+
+<p><strong>Conclusion:</strong><br />
+The requirement is <strong>not met</strong>; a new script and schedule must be implemented to ensure weekly checks.</p>
+
+<p><strong>Status:</strong> <strong>RED</strong><br />
+TERMINATE</p>
+</div></li><li class=""><span class="guideline">Account properties accessible by unprivileged users are not used to store passwords.</span><div class="summary"><p><strong>Analysis</strong></p>
+
+<p><strong>Compliance Criterion:</strong>  </p>
+
+<blockquote>
+  <p><em>Account properties accessible by unprivileged users are not used to store passwords.</em></p>
+</blockquote>
+
+<p>This requirement is about ensuring that no password values are placed into user account attributes that read‑only (or low-privilege) directory users can view — such as general contact or description fields in Active Directory.</p>
+
+<hr />
+
+<h3><strong>1. <code>DisablePasswordChange.txt</code></strong></h3>
+
+<ul>
+<li>Writes to a registry path:<br />
+<code>HKLM:\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters</code></li>
+<li>Modifies <code>DisablePasswordChange</code> DWORD to value <code>0</code>.</li>
+<li>No account attributes are accessed or modified.</li>
+<li>No credentials or password strings involved.</li>
+</ul>
+
+<hr />
+
+<h3><strong>2. <code>DisableDomainCreds.txt</code></strong></h3>
+
+<ul>
+<li>Writes to:<br />
+<code>HKLM:\SYSTEM\CurrentControlSet\Control\Lsa</code></li>
+<li>Sets <code>DisableDomainCreds</code> DWORD to value <code>1</code>.</li>
+<li>Purpose: disables cached domain credentials.</li>
+<li>No user account attribute manipulation, no storage of password data.</li>
+</ul>
+
+<hr />
+
+<h3><strong>3. <code>MaximumPasswordAge.txt</code></strong></h3>
+
+<ul>
+<li>Writes to:<br />
+<code>HKLM:\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters</code></li>
+<li>Sets <code>MaximumPasswordAge</code> DWORD to value <code>30</code>.</li>
+<li>Controls password age policy, no handling of actual password values.</li>
+<li>No account attributes are altered.</li>
+</ul>
+
+<hr />
+
+<p><strong>Findings:</strong>
+- All three scripts operate on system‑level registry keys related to authentication policy.
+- <strong>None</strong> of these scripts:
+  - Query, write to, or use any <em>per-user</em> account attributes.
+  - Store or insert password values in attributes (sensitive or otherwise).
+  - Provide any path for unprivileged users to access passwords.</p>
+
+<hr />
+
+<p><strong>Conclusion:</strong>
+✅ <strong>Criterion satisfied</strong> – Based on the provided scripts, there is no evidence of passwords being stored in account properties accessible to unprivileged users.</p>
+
+<hr />
+
+<p>If you want, I can create a verification script that can be run in your environment to search AD for any non-sensitive attributes that might contain patterns resembling passwords, as additional IRAP evidence. Would you like me to do that?</p>
+
+<p>RemediationAgent : "No remediation required. Analysis of <code>DisablePasswordChange.txt</code>, <code>DisableDomainCreds.txt</code>, and <code>MaximumPasswordAge.txt</code> confirms they only modify system-level registry keys (<code>DisablePasswordChange</code>, <code>DisableDomainCreds</code>, <code>MaximumPasswordAge</code>) and do not write to or use any per-user account properties — especially not any that are accessible to unprivileged users. There is no handling, storage, or exposure of passwords in these scripts."</p>
+
+<hr />
+
+<p><strong>Summary of Findings</strong><br />
+- <strong><code>DisablePasswordChange.txt</code></strong> – Sets <code>DisablePasswordChange=0</code> in Netlogon service parameters; no password handling or account attribute changes.
+- <strong><code>DisableDomainCreds.txt</code></strong> – Sets <code>DisableDomainCreds=1</code> in Local Security Authority (LSA) to disable cached credentials; no changes to user attributes.
+- <strong><code>MaximumPasswordAge.txt</code></strong> – Sets <code>MaximumPasswordAge=30</code> days in Netlogon parameters; no password storage in any attribute.</p>
+
+<p><strong>Compliance Status</strong><br />
+The scripts meet the ASD System Security Plan annex control that account properties accessible by unprivileged users are not used to store passwords. No unsafe storage of credentials was identified.</p>
+
+<p><strong>Status:</strong> <strong>GREEN</strong><br />
+TERMINATE</p>
+</div></li><li class="red"><span class="guideline">User account passwords do not use reversible encryption.</span><div class="summary"><p><strong>Analysis</strong></p>
+
+<p><strong>Compliance Criterion:</strong>  </p>
+
+<blockquote>
+  <p><em>User account passwords do not use reversible encryption.</em></p>
+</blockquote>
+
+<p>This generally requires ensuring that the <strong>"Store passwords using reversible encryption"</strong> setting is disabled in Active Directory / local policy. In PowerShell, this could appear in:
+- <code>Set-ADUser -AllowReversiblePasswordEncryption $true/$false</code>
+- Group Policy registry paths controlling the setting.
+- Domain or local security policy templates.</p>
+
+<hr />
+
+<h3><strong>Provided script:</strong> <code>AllowNullSessionFallback.txt</code></h3>
+
+<p><strong>Functionality:</strong>
+- Creates/updates registry path:<br />
+  <code>HKLM:\System\CurrentControlSet\Control\LSA\MSV1_0</code>
+- Sets:
+  <code>
+  allownullsessionfallback = 0 (DWORD)
+</code>
+- This impacts NTLM authentication behaviour for NULL sessions; it has <strong>no bearing</strong> on how passwords are stored or whether reversible encryption is used.</p>
+
+<hr />
+
+<p><strong>Observations:</strong>
+- The script does <strong>not</strong> reference:
+  - <code>AllowReversiblePasswordEncryption</code>
+  - Any registry key or policy setting controlling password encryption mode.
+  - Any <code>Set-ADUser</code> or equivalent call that could enable reversible password storage.
+- Therefore, <strong>no direct evidence</strong> that it enforces disabling reversible encryption.
+- Equally, there is no code that <strong>enables</strong> reversible encryption, so from the content here, it does not appear to violate the requirement.
+- However, <em>compliance with the criterion</em> requires explicit assurance/configuration that reversible encryption is disabled — this script simply does nothing in that area.</p>
+
+<hr />
+
+<h3><strong>Conclusion:</strong></h3>
+
+<ul>
+<li>❌ <strong>Criterion not demonstrated as satisfied</strong> — The provided script does <strong>not</strong> configure reversible encryption for passwords either way; it has no effect on that setting. While it does not enable reversible encryption, there is also no evidence in the provided material of an explicit control that enforces its disablement, as required for IRAP evidence purposes.</li>
+</ul>
+
+<hr />
+
+<p>If you'd like, I can prepare a small PowerShell snippet that <strong>explicitly ensures</strong> <code>Store passwords using reversible encryption</code> is disabled in the environment, which would satisfy this control and produce tangible compliance evidence. Would you like me to create that?</p>
+
+<p>RemediationAgent : "Implement explicit configuration to ensure reversible encryption for passwords is disabled. For example, in Active Directory environments, enforce the 'Store passwords using reversible encryption' policy to 'Disabled' via Group Policy (Security Settings → Account Policies → Password Policy). In PowerShell, verify with <code>Get-ADUser -Filter * -Properties AllowReversiblePasswordEncryption</code> that all accounts have <code>AllowReversiblePasswordEncryption</code> set to <code>False</code>, and remediate with <code>Set-ADUser -AllowReversiblePasswordEncryption $false</code>. For local accounts, adjust the relevant security policy or registry keys to enforce non-reversible encryption."</p>
+
+<hr />
+
+<p><strong>Summary of Findings</strong><br />
+- Reviewed <code>AllowNullSessionFallback.txt</code> — it configures <code>allownullsessionfallback=0</code> in the LSA\MSV1_0 registry path, unrelated to password encryption mode.<br />
+- No references in the provided script to <code>AllowReversiblePasswordEncryption</code> or any password encryption settings.<br />
+- No code found that enables reversible encryption, but also no evidence of an explicit control that disables it, as required for IRAP evidence.<br />
+- Control compliance is not demonstrated in the provided artifact.</p>
+
+<p><strong>Conclusion:</strong><br />
+Criterion not satisfied — must implement and evidence configuration to disable reversible encryption on user accounts.</p>
+
+<p><strong>Status:</strong> <strong>RED</strong><br />
+TERMINATE</p>
+</div></li></ul></body></html>

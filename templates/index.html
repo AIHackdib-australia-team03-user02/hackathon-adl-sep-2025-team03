@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Upload Spreadsheet</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .remediation-steps {
+            display: block;
+            color: #b0b6c6;
+            font-size: 0.75em !important;
+        }
+        
+        .sidebar {
+            background: #111827;
+            color: #e3e6ea;
+            box-shadow: 0 2px 8px rgba(30, 40, 60, 0.12);
+            font-size: 1.05em;
+        }
+        
+        #results {
+            width: 100%;
+            max-width: none;
+            margin: 1em 0 0 0;
+            padding: 0;
+            align-self: flex-start;
+        }
+        
+        body {
+            font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+            background: #0B1220;
+            margin: 0;
+            color: #e3e6ea;
+        }
+        
+        h1 {
+            font-size: 1.5em;
+        }
+        
+        h2 {
+            font-size: 1.2em;
+        }
+        
+        h3 {
+            font-size: 1.1em;
+        }
+        
+        h4 {
+            font-size: 1em;
+        }
+        
+        h5 {
+            font-size: 0.9em;
+        }
+        
+        .sidebar {
+            background: #111827;
+            color: #e3e6ea;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(30, 40, 60, 0.12);
+            padding: 2em 1.5em;
+            font-size: 1.05em;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+        }
+        
+        form {
+            background: #23283a;
+            padding: 2em;
+            box-shadow: 0 4px 24px rgba(30, 40, 60, 0.18);
+            max-width: 500px;
+            margin: 0 auto 2em auto;
+            border: 1px solid #23283a;
+        }
+        
+        input[type=file] {
+            margin-bottom: 1em;
+            color: #e3e6ea;
+            background: #23283a;
+            border: 1px solid #353b4a;
+            border-radius: 4px;
+            padding: 0.5em;
+        }
+        
+        button {
+            background: linear-gradient(90deg, #2980b9 0%, #4fd18b 100%);
+            color: #fff;
+            border: none;
+            padding: 0.7em 1.5em;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(30, 40, 60, 0.18);
+            transition: background 0.2s;
+        }
+        
+        button:hover {
+            background: linear-gradient(90deg, #21618c 0%, #3bbf6b 100%);
+        }
+        
+        #results {
+            max-width: 900px;
+            margin: 2em auto 0 auto;
+            padding: 0;
+        }
+        
+        ul {
+            list-style: none;
+            padding: 0;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        
+        li {
+            background: #23283a;
+            margin-bottom: 1em;
+            padding: 1em 1.2em 0.7em 1.2em;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(30, 40, 60, 0.12);
+            border-left: 6px solid #4fd18b;
+            transition: box-shadow 0.2s;
+            color: #e3e6ea;
+        }
+        
+        .header-bar {
+            background: #23283a;
+            padding: 1.2em 2em 1em 2em;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            border-bottom: 1px solid #353b4a;
+            margin-bottom: 2em;
+        }
+        
+        .logo-title {
+            display: flex;
+            align-items: center;
+        }
+        
+        .logo {
+            font-size: 2em;
+            margin-right: 0.7em;
+        }
+        
+        .title-text {
+            font-size: 1.5em;
+            font-weight: 700;
+            color: #e3e6ea;
+            letter-spacing: 0.01em;
+        }
+        
+        .subtitle {
+            font-size: 1em;
+            margin-top: 0.3em;
+            font-weight: 500;
+        }
+        
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 60vh;
+        }
+        
+        form {
+            margin-bottom: 2em;
+            width: 100%;
+            max-width: 500px;
+        }
+        
+        .form-label {
+            color: #e3e6ea;
+            font-size: 1.1em;
+            font-weight: 600;
+            margin-bottom: 0.7em;
+            display: block;
+        }
+        
+        li.red {
+            border-left: 8px solid #e74c3c;
+        }
+        
+        .guideline {
+            color: #4fd18b;
+            li {
+                background: #23283a;
+                margin-bottom: 1em;
+                padding: 1em 1.2em 0.7em 1.2em;
+                border-radius: 10px;
+                box-shadow: 0 2px 8px rgba(30, 40, 60, 0.12);
+                border-left: 6px solid #4fd18b;
+                transition: box-shadow 0.2s;
+                color: #e3e6ea;
+            }
+            font-size: 1em;
+        }
+        
+        @media (max-width: 600px) {
+            body {
+                padding: 0.5em;
+            }
+            ul {
+                padding: 0;
+            }
+            li {
+                padding: 1em;
+            }
+        }
+        
+        pre,
+        code {
+            background: #23283a;
+            border-radius: 6px;
+            padding: 0.2em 0.5em;
+            font-size: 0.95em;
+            color: #e3e6ea;
+        }
+        
+        blockquote {
+            border-left: 4px solid #4fd18b;
+            margin: 1em 0;
+            padding-left: 1em;
+            color: #e3e6ea;
+            background: #23283a;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin: 1em 0;
+        }
+        
+        th,
+        td {
+            border: 1px solid #353b4a;
+            padding: 0.5em 1em;
+            color: #e3e6ea;
+        }
+        
+        th {
+            background: #23283a;
+        }
+        
+        .loading {
+            text-align: center;
+            color: #4fd18b;
+            font-size: 1.2em;
+            margin-top: 2em;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="d-flex">
+        <div class="col-1" style="height: 100vh;">
+            <aside class="sidebar py-5 px-1 position-sticky" style="top: 0; height: 100vh; position: fixed !important; width:10vw"></aside>
+            <!-- <h2>How this app works</h2>
+                <p>
+                    Upload your system security plan spreadsheet. Our multi-agent engine analyses each control using Azure OpenAI, providing actionable compliance guidance and reproducible results. Results update live as agents work through your file.
+                </p> -->
+            </aside>
+
+        </div>
+        <div class="col p-5 m-3">
+            <div class="header-bar d-flex flex-column justify-content-end position-relative" style="height:200px; background: url('/static/hero.png') center/cover no-repeat;">
+                <div style="position:absolute; inset:0; z-index:1; pointer-events:none; background: linear-gradient(90deg, rgba(25,40,80,0.1) 0%, rgba(25,40,80,0.1) 100%);"></div>
+                <div style="position:relative; z-index:2;">
+                    <div class="logo-title mb-2">
+                        <span class="title-text">Defence ISM Remediation Tool</span>
+                    </div>
+                    <div class="subtitle">Multi-agent AutoGen • Azure OpenAI • Reproducible runs</div>
+                </div>
+            </div>
+
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col">
+                        <form id="uploadForm" class="w-100 mb-4">
+                            <label for="fileInput" class="form-label">Upload Spreadsheet</label>
+                            <input type="file" name="file" id="fileInput" accept=".xlsx" required class="form-control mb-3"><br>
+                            <button type="submit" class="btn btn-success">Upload and Analyse</button>
+                        </form>
+                        <div class="loading" id="loadingMsg" style="display:none;">
+                            <img src="/static/running.gif" alt="Loading..." style="height:10vh;">
+                        </div>
+
+                    </div>
+                    <div class="main-content col-md-9 col-lg-10 d-flex flex-column align-items-start">
+                        <div id="results">
+                            <ul id="resultsList"></ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const form = document.getElementById('uploadForm');
+        const fileInput = document.getElementById('fileInput');
+        const resultsList = document.getElementById('resultsList');
+        const loadingMsg = document.getElementById('loadingMsg');
+        let taskId = null;
+        let polling = false;
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const file = fileInput.files[0];
+            if (!file) return;
+            const formData = new FormData();
+            formData.append('file', file);
+            resultsList.innerHTML = '';
+            loadingMsg.style.display = 'block';
+            fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    taskId = data.task_id;
+                    polling = true;
+                    pollResults();
+                });
+        });
+
+        function pollResults() {
+            if (!taskId) return;
+            fetch(`/progress/${taskId}`)
+                .then(response => response.json())
+                .then(data => {
+                    resultsList.innerHTML = data.items.join('');
+                    if (data.done) {
+                        loadingMsg.textContent = 'Analysis complete.';
+                        polling = false;
+                    } else {
+                        setTimeout(pollResults, 2000);
+                    }
+                });
+        }
+    </script>
+</body>
+
+</html>

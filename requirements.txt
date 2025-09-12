@@ -8,3 +8,9 @@ aiohttp>=3.8.0
 typing-extensions>=4.0.0
 tiktoken>=0.5.1
 aiofiles
+fastapi 
+uvicorn 
+jinja2 
+openpyxl
+python-multipart
+markdown2

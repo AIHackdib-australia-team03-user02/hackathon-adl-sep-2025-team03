@@ -8,6 +8,17 @@
             "program": "${workspaceFolder}/main.py",
             "console": "integratedTerminal",
             "envFile": "${workspaceFolder}/.env"
+        },
+        {
+            "name": "Run FastAPI Webserver",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/webserver_ajax.py",
+            "console": "integratedTerminal",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            },
+            "args": []
         }
     ]
 }

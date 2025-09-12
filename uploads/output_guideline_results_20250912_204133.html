@@ -1,0 +1,414 @@
+<html><head><title>Guideline Results</title><style>body {font-family: 'Segoe UI', Arial, sans-serif; background: #f8f9fa; margin: 0; padding: 2em;} h1 {color: #2c3e50; margin-bottom: 1em;} ul {list-style: none; padding: 0;} li {background: #fff; margin-bottom: 1em; padding: 1em; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.07);} strong {color: #2980b9; font-size: 1.1em;} .summary {display: block; margin-top: 0.5em; color: #444; white-space: pre-line;}</style></head><body><h1>Guideline Results</h1><ul><li style="background: #d4edda;"><strong>User accounts are not configured with password never expires or password not required.</strong><span class="summary">Let's review what is in the two scripts you’ve provided.
+
+---
+
+**DisablePasswordChange.txt**  
+
+This script:  
+- Writes a registry value `DisablePasswordChange` to `0` under  
+  `HKLM:\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters`  
+
+That setting affects whether machine accounts automatically change their passwords — it is not directly the same as a user account property (`PasswordNeverExpires` or `PasswordNotRequired`) in Active Directory or a local SAM.  
+Setting it to `0` would mean "do not disable password change" (so password change *is allowed*). This is not a breach of the given criterion.
+
+---
+
+**MaximumPasswordAge.txt**  
+
+This script:  
+- Writes a registry value `MaximumPasswordAge` to `30` in the same `Netlogon\Parameters` key.  
+
+Again, this is a Netlogon/machine-level default controlling account password age. It enforces a maximum password age of 30 days — that supports requiring password changes regularly.  
+There is no configuration here that would override or set `PasswordNeverExpires` or `PasswordNotRequired`.
+
+---
+
+**Assessment against criterion**  
+Criterion:  
+> “User accounts are not configured with password never expires or password not required.”
+
+- There is **no code** in either script that targets user account objects (`Set-ADUser`, `net user ...`, `WinNT://...`) or sets the relevant flags (`PasswordNeverExpires`, `UserCannotChangePassword`, `PasswordNotRequired`, or equivalent bit in the `userAccountControl` attribute).  
+- Both scripts deal with machine/account password management in the Netlogon service, not per-user account settings.  
+- In fact, both settings are consistent with good practice: `DisablePasswordChange=0` allows password changes; `MaximumPasswordAge=30` enforces expiry.
+
+---
+
+**Conclusion:**  
+There is **no evidence** in these scripts of configuring any user accounts with “password never expires” or “password not required.” Based on the provided code, the scripts **do not violate** the stated compliance criterion, and on the contrary, they appear supportive of enforcing password expiration.
+
+---
+
+Do you want me to also recommend a PowerShell auditing snippet that could explicitly verify no accounts in the environment have those flags set? That can be useful for an IRAP assessment.
+
+RemediationAgent : "No remediation is required because the analysis of DisablePasswordChange.txt and MaximumPasswordAge.txt shows no configuration of user accounts with 'PasswordNeverExpires' or 'PasswordNotRequired'. Both scripts only affect machine account password policy (Netlogon parameters) in a compliant way — DisablePasswordChange=0 allows password changes and MaximumPasswordAge=30 enforces password expiration. Recommend optionally adding an explicit audit script to regularly confirm no accounts have those attributes set, to satisfy ongoing IRAP compliance."  
+
+---
+
+**Summary of Findings:**  
+- **Files reviewed:**  
+  - **DisablePasswordChange.txt**: Sets `DisablePasswordChange` registry value to `0` under `HKLM:\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters`, ensuring automatic password changes are NOT disabled for machine accounts. Does not touch user account properties.  
+  - **MaximumPasswordAge.txt**: Sets `MaximumPasswordAge` registry value to `30` under the same Netlogon Parameters key, enforcing a 30-day maximum password age for machine accounts. Does not modify individual user account attributes.  
+
+- **Compliance Criterion:** *"User accounts are not configured with password never expires or password not required."*  
+- **Analysis Outcome:** No evidence of code setting `PasswordNeverExpires`, `PasswordNotRequired`, or equivalent flags on user accounts. Both scripts are aligned with password expiration best practice.  
+- **Remediation Need:** None — only recommendation is to optionally add a verification step to regularly audit user accounts for these attributes as part of IRAP ongoing compliance.
+
+**Status:** **GREEN**  
+
+TERMINATE</span></li><li style="background: #d4edda;"><strong>The UserPassword attribute for user accounts is not used.</strong><span class="summary">Let's review what is actually in the provided `configuration-data.txt` script.
+
+---
+
+**Contents summary**  
+
+The file is a DSC (Desired State Configuration) **configuration data** hash table:
+
+- An `AllNodes` section for localhost, with:
+  - `PSDscAllowPlainTextPassword = $true`
+  - `PSDscAllowDomainUser = $true`
+  - a `ServerNumber` string
+
+- A `NonNodeData` section containing:
+  - TenantId (GUID placeholder)
+  - OrganizationName (onmicrosoft.com)
+  - ApplicationId
+  - CertificateThumbprint
+
+There is **no reference** to the `UserPassword` attribute or property anywhere in the file. There is no binding to AD/LDAP user objects and no code to create or modify accounts.
+
+---
+
+**Criterion:**  
+> “The UserPassword attribute for user accounts is not used.”
+
+- `UserPassword` is typically an attribute in LDAP schemas (including AD-LDS, some AD implementations, other directory services) to set a user's password directly.
+- **Evidence from script**: No reference, assignment, or manipulation of an attribute named `UserPassword` or equivalent.
+- This configuration is only defining DSC meta-configuration and some environment variables / connection details.
+
+---
+
+**Conclusion:**  
+✅ The provided script **does not use** the `UserPassword` attribute for user accounts.  
+On the basis of the content given, it **meets** the compliance requirement.
+
+---
+
+If you’d like, I can draft a pattern-matching check that could be run across scripts to automatically flag any `UserPassword`–related usage for IRAP compliance audits. Would you like me to prepare that?
+
+RemediationAgent : "No remediation is required because the analysis of configuration-data.txt shows no usage of the 'UserPassword' attribute for any user account. The script only contains Desired State Configuration meta‑data and environment parameters (TenantId, ApplicationId, etc.) and does not interact with user account or password-setting attributes. For ongoing IRAP compliance, it is recommended to implement automated scans across all scripts to detect any occurrence of 'UserPassword' or equivalent direct password‑setting attributes."  
+
+---
+
+**Summary of Findings:**  
+- **File reviewed:**  
+  - **configuration-data.txt**: Defines DSC configuration data including flags `PSDscAllowPlainTextPassword` and `PSDscAllowDomainUser` plus tenant/domain/application metadata. There is no code that creates or alters user accounts, and no references to `UserPassword` or equivalent.
+
+- **Compliance Criterion:** *"The UserPassword attribute for user accounts is not used."*  
+- **Analysis Outcome:** No evidence of using the `UserPassword` attribute in the provided script. The file is compliant.  
+- **Remediation Need:** None — optional recommendation for automated keyword scanning of codebases to detect any instances of this attribute.
+
+**Status:** **GREEN**  
+
+TERMINATE</span></li><li style="background: #d4edda;"><strong>The sIDHistory attribute for user accounts is not used.</strong><span class="summary">Alright — let’s go step‑by‑step through the content you’ve provided and map it to the ASD control requirement.
+
+---
+
+## **Criterion under review**
+
+> *“The sIDHistory attribute for user accounts is not used.”*
+
+**Background:**  
+`sIDHistory` is an LDAP/Active Directory user attribute that can hold one or more previous SID values when accounts are migrated between domains. Because it can be abused for privilege escalation or unauthorised access, the ASD control explicitly prohibits its use.
+
+For IRAP assessment purposes, we need to determine whether these PowerShell scripts:
+
+- Reference `sIDHistory` directly, or
+- Indirectly query/set user attributes in a way that populates `sIDHistory`.
+
+---
+
+## **Review of provided script: `asdbpsc-dsc-entra.txt`**
+
+**Nature of script:**
+- This is a Microsoft365DSC configuration for Azure AD / Entra tenant security settings.
+- Defines many DSC resources such as:
+  - `AADAuthenticationContextClassReference`
+  - `AADAuthorizationPolicy`
+  - `AADConditionalAccessPolicy`
+  - `AADCrossTenantAccessPolicyConfigurationDefault`
+  - `AADExternalIdentityPolicy`
+  - `AADGroupLifecyclePolicy`
+  - `AADNamedLocationPolicy`
+- Parameters and configuration data largely relate to Application IDs, Certificate thumbprints, Conditional Access policy configuration, Named Locations, Group Lifecycle, etc.
+
+**Search for `sIDHistory`:**
+- There is **no** literal string `sIDHistory` in the file.
+- No code is manipulating individual user objects’ AD LDAP attributes.
+- The DSC resources target Azure AD / Microsoft365 service configuration, **not** on‑premises AD user attributes.
+
+**Search for possible indirect changes:**
+- The DSC resources shown do not carry any schema element for `sIDHistory`.
+- No call to cmdlets such as `Set-ADUser`, `New-ADUser`, `Get-ADUser -Properties sIDHistory`, etc.
+- No raw LDAP modification operations.
+- All user‑related references are policy “IncludeUsers = @("All")” or group/role Exclude lists within Conditional Access policies — these relate to policy scope, not user object attributes.
+
+---
+
+## **Assessment**
+
+Based solely on the script provided:
+
+- **No evidence** of reading or writing the `sIDHistory` attribute.
+- **No user account provisioning or migration** code that would set legacy SIDs.
+- Script is **focused on Azure AD Conditional Access and policy configuration**.
+
+Thus, the provided PowerShell does **not** use the `sIDHistory` attribute for user accounts.
+
+---
+
+### **Conclusion**
+✅ **Compliant** — The reviewed script satisfies the compliance criterion: *“The sIDHistory attribute for user accounts is not used.”*
+
+---
+
+If you like, I can also provide a **PowerShell analysis snippet** for your IRAP evidence pack that searches an entire codebase for `sIDHistory` references, which would be a useful detective control in future reviews. Would you like me to add that?
+
+RemediationAgent : "No remediation is required because the analysis of asdbpsc-dsc-entra.txt shows no reference to or modification of the 'sIDHistory' attribute for user accounts. The script configures Azure AD Conditional Access and related Microsoft365DSC/Entra tenant policies, and does not perform any user migration or Active Directory account attribute changes. For ongoing assurance, it is recommended to implement automated scans across code repositories to detect any direct or indirect invocation of 'sIDHistory' in scripts or configuration management artifacts."  
+
+---
+
+**Summary of Findings:**  
+- **File reviewed:**  
+  - **asdbpsc-dsc-entra.txt**: A Microsoft365DSC configuration loading Azure AD/Entra tenant settings such as Conditional Access Policies, Authorization Policies, and Named Location Policies.  
+- **Evidence search:** No literal or functional reference to the `sIDHistory` AD attribute; no AD user provisioning, migration, or modification cmdlets; no raw LDAP calls. All user mentions are limited to policy-scoping arrays, not directory attributes.  
+- **Compliance Criterion:** *"The sIDHistory attribute for user accounts is not used."*  
+- **Analysis Outcome:** Fully compliant — there is no indication of creation, population, or querying of `sIDHistory`.  
+- **Remediation Need:** None — recommend optional static code scans for attribute name as part of SDLC to prevent future non-compliance.
+
+**Status:** **GREEN**  
+
+TERMINATE</span></li><li style="background: #f8d7da;"><strong>User accounts are checked at least weekly for the presence of the sIDHistory attribute.</strong><span class="summary">Alright — here’s the analysis based on what’s been provided.
+
+---
+
+## **Criterion under review**
+
+> *“User accounts are checked at least weekly for the presence of the sIDHistory attribute.”*
+
+**Intent:**  
+This control requires there to be a process or automation that inspects user accounts on a regular (at least weekly) basis, looking for `sIDHistory` values, which could indicate migrated accounts or a security issue.
+
+To demonstrate compliance from scripts, we would expect to see:
+
+- PowerShell logic to **enumerate user accounts** (likely via `Get-ADUser` or equivalent in AzureAD/Microsoft Graph).
+- Retrieval or inspection of the `sIDHistory` attribute.
+- Conditional reporting or alerting where `sIDHistory` is populated.
+- Evidence of **execution frequency** — e.g. scheduled job, cron‐like entry, Task Scheduler XML, or reference in an automation workflow that runs weekly.
+
+---
+
+## **Evidence in provided codebase**
+
+From the "SearchBlueprintAgent" output:
+
+- **No scripts were found** (`--- None ---`) that check for or reference `sIDHistory`.
+- No PowerShell commands like:
+  - `Get-ADUser -Properties sIDHistory`
+  - `(Get-ADUser ...).sIDHistory`
+  - LDAP filter with `sIDHistory=*`
+- No loops or logic that would test that the attribute is empty.
+- No frequency logic (scheduled tasks, cron jobs, etc.) evident.
+
+---
+
+## **Assessment**
+
+- There is **no evidence** in the provided material that any script checks user accounts for the presence of the `sIDHistory` attribute.
+- There is **no indication of a weekly schedule** for such a check.
+- Based on available evidence, the provided scripts **do not** implement or demonstrate compliance with this requirement.
+
+---
+
+### **Conclusion**
+
+❌ **Non‑compliant** — There is no script or automation present that checks user accounts at least weekly for the presence of `sIDHistory`.
+
+---
+
+**Recommendation for compliance:**
+- Implement a weekly scheduled job using PowerShell such as:
+
+```powershell
+# Example: Check for sIDHistory on all enabled accounts
+$usersWithSIDHistory = Get-ADUser -Filter * -Properties sIDHistory |
+    Where-Object { $_.sIDHistory -ne $null }
+
+if ($usersWithSIDHistory) {
+    # Log, alert or remediate
+    $usersWithSIDHistory | Export-Csv "C:\Logs\sIDHistoryAudit_$(Get-Date -Format yyyyMMdd).csv" -NoTypeInformation
+}
+
+```
+- Use Task Scheduler to run this script weekly and retain audit logs for IRAP evidence.
+
+---
+
+If you’d like, I can create a **full IRAP‑ready automation pack** including the script, scheduler configuration, and reporting template to close this gap. Would you like me to prepare that?
+
+RemediationAgent : "Remediation is required because no scripts were found that check user accounts for the presence of the 'sIDHistory' attribute, nor any evidence of weekly execution. To achieve compliance, implement an automated process (e.g. a PowerShell script using `Get-ADUser -Properties sIDHistory`) that runs weekly via Task Scheduler or equivalent, captures all accounts with non‑null `sIDHistory`, and logs/alerts as per policy. Maintain execution logs and results for IRAP evidence."  
+
+---
+
+**Summary of Findings:**  
+- **Files reviewed:** None provided that perform any `sIDHistory` checks.  
+- **Compliance Criterion:** *"User accounts are checked at least weekly for the presence of the sIDHistory attribute."*  
+- **Analysis Outcome:** There is no code or automation in the provided materials that queries, inspects, or reports on `sIDHistory` for user accounts; no scheduling information is present to demonstrate weekly frequency.  
+- **Remediation Need:** Required — implement and schedule a weekly audit script targeting `sIDHistory` and retain records for compliance verification.
+
+**Status:** **RED**  
+
+TERMINATE</span></li><li style="background: #d4edda;"><strong>Account properties accessible by unprivileged users are not used to store passwords.</strong><span class="summary">Alright – let’s walk through what’s in scope here.
+
+---
+
+## **Criterion under review**
+
+> *“Account properties accessible by unprivileged users are not used to store passwords.”*
+
+**Intent:**  
+In practice, this means:
+- You must not write passwords into non‑sensitive or broadly readable AD attributes (e.g. `description`, `info`, or `extensionAttribute…`) or similar cloud directory properties that ordinary users can read.
+- Nor should scripts store them in any other account property that can be queried by unprivileged accounts or anonymous binds.
+
+---
+
+## **Review of provided scripts**
+
+### **DisablePasswordChange.txt**
+- Function `WriteReg` writes a DWORD registry value `DisablePasswordChange = 0` under  
+  `HKLM:\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters`.
+- This is a local machine/Netlogon service configuration setting.
+- No account (user or computer) objects or attributes are being manipulated.
+
+### **MaximumPasswordAge.txt**
+- Function `WriteReg` writes a DWORD registry value `MaximumPasswordAge = 30` under the same Netlogon registry key.
+- Again, purely a machine/service configuration parameter.
+
+---
+
+## **Analysis**
+
+- Neither script touches **user account properties** in Active Directory, Azure AD or other account stores.
+- No attributes known to be visible to unprivileged users (e.g. `description`, `info`) are written to.
+- No password values (cleartext, hashed, or otherwise) are being assigned to any property.
+- All changes are confined to the local registry, not to directory service attributes.
+
+---
+
+## **Assessment & Compliance**
+
+Based on the content provided:
+
+- There is **no evidence** of any password being stored in an account property accessible by unprivileged users.
+- These scripts are concerned only with Netlogon service registry parameters.
+- **Criterion Met** — The reviewed scripts comply with the requirement.
+
+---
+
+**Conclusion:**  
+✅ **Compliant** — The provided scripts satisfy the ASD System Security Plan criterion that account properties accessible by unprivileged users are not used to store passwords.
+
+---
+
+If you’d like, I can also suggest **detection scripts** to audit your directory and confirm no such attributes are currently in use for passwords, which can be useful for IRAP evidence. Would you like me to prepare that?
+
+RemediationAgent : "No remediation is required because the analysis of DisablePasswordChange.txt and MaximumPasswordAge.txt shows no assignment of passwords to any account properties, whether accessible by unprivileged users or not. Both scripts only write to Netlogon service registry parameters for machine password policy and do not modify any user account attributes. For ongoing compliance assurance, consider running periodic audits across directory services to confirm that no non-sensitive attributes contain password-like values."  
+
+---
+
+**Summary of Findings:**  
+- **Files reviewed:**
+  - **DisablePasswordChange.txt**: Writes `DisablePasswordChange=0` to `HKLM:\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters` – local machine registry, no user attributes modified.
+  - **MaximumPasswordAge.txt**: Writes `MaximumPasswordAge=30` in the same registry path – local machine registry, no user attributes modified.
+- **Compliance Criterion:** *"Account properties accessible by unprivileged users are not used to store passwords."*
+- **Analysis Outcome:** No user account properties touched; no password storage in account attributes; all operations confined to machine-level configuration.
+- **Remediation Need:** None — recommend optional periodic audit of account attributes as a preventive compliance check.
+
+**Status:** **GREEN**  
+
+TERMINATE</span></li><li style="background: #d4edda;"><strong>User account passwords do not use reversible encryption.</strong><span class="summary">Alright – let’s walk through the details.
+
+---
+
+## **Criterion under review**
+
+> *“User account passwords do not use reversible encryption.”*
+
+**Intent:**  
+In Windows / Active Directory environments, “Store passwords using reversible encryption” is a specific account property/password policy setting (`userAccountControl` bit or domain policy) which, if enabled, stores passwords in a form that can be decrypted. This is considered insecure and is generally prohibited by policy.
+
+For IRAP purposes, evidence of *compliance* in code would typically be:
+- Explicitly disabling that setting at domain or local password policy level.
+- Not enabling it per-user (no `AllowReversiblePasswordEncryption`, no setting of `userAccountControl` bit 128).
+- No logic that would set `Store passwords using reversible encryption` to `Enabled`.
+
+---
+
+## **Review of provided script: `configuration-data.txt`**
+
+**Content summary:**
+- This is a **Desired State Configuration** (DSC) data file.
+- Defines:
+  - An `AllNodes` entry for `localhost`
+    - `PSDscAllowPlainTextPassword = $true`
+    - `PSDscAllowDomainUser = $true`
+    - Other non-security parameters (`ServerNumber`, etc.)
+  - `NonNodeData` tenant and app registration details: `TenantId`, `OrganizationName`, `ApplicationId`, `CertificateThumbprint`.
+
+**Key observations:**
+- This file is *configuration data*, not an implementation of password policy.
+- It does **not** manipulate Active Directory group policy or local security policy for “Store passwords using reversible encryption.”
+- `PSDscAllowPlainTextPassword = $true` is **not the same** as storing passwords using reversible encryption for user accounts. This DSC meta setting controls whether the configuration data file may contain passwords in plain text for DSC resource processing — it does not apply to actual user accounts in AD or OS password store.
+
+---
+
+## **Analysis versus Criterion**
+
+- There is **no** code here affecting AD/local user policy `Store passwords using reversible encryption`.
+- No creation or modification of user accounts with reversible encryption enabled.
+- `PSDscAllowPlainTextPassword` could allow plain text secrets within DSC config files, but that’s a separate security consideration — it is **not** the “reversible encryption” option in Windows password policy.
+
+Therefore:
+
+- From the content provided, there is **no evidence** that user account passwords are stored using reversible encryption.
+- The script neither enforces nor disables it — it is simply silent on the issue.
+
+---
+
+## **Conclusion**
+
+✅ **Compliant (no evidence of non‑conformance)** — The provided script does not configure or require reversible encryption of user account passwords.
+
+---
+
+**Recommendation for completeness in IRAP evidence:**
+Even though this script is compliant, IRAP assessors will expect *positive evidence* such as:
+- A Group Policy backup/report showing “Store passwords using reversible encryption” set to **Disabled** for the domain and all OUs.
+- A query confirming no users have `userAccountControl` bits indicating reversible encryption.
+
+Would you like me to provide a quick **PowerShell test snippet** to generate such a compliance report for your environment?
+
+RemediationAgent : "No remediation is required because the analysis of configuration-data.txt shows no code that configures user account passwords to use reversible encryption. The file contains DSC metadata (`PSDscAllowPlainTextPassword = $true`) which is unrelated to the Windows/AD policy for reversible encryption of account passwords, and does not interact with any AD policy or `userAccountControl` settings that would enable the feature. For completeness in IRAP evidence, it is recommended to supplement this with positive confirmation from Group Policy reports and AD user attribute audits demonstrating that 'Store passwords using reversible encryption' is disabled everywhere."  
+
+---
+
+**Summary of Findings:**  
+- **File reviewed:**  
+  - **configuration-data.txt**: DSC configuration data specifying node metadata and tenant/application details.  
+- **Compliance Criterion:** *"User account passwords do not use reversible encryption."*  
+- **Analysis Outcome:** No references to Group Policy or AD setting for "Store passwords using reversible encryption." No script logic creating user accounts with reversible encryption enabled. `PSDscAllowPlainTextPassword` in this context affects DSC configuration processing, not login accounts.  
+- **Remediation Need:** None — optional recommendation to generate evidence from Group Policy and AD queries for audit completeness.
+
+**Status:** **GREEN**  
+
+TERMINATE</span></li></ul></body></html>

@@ -1,0 +1,978 @@
+<!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Guideline Results</title>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+        <style>
+            body {
+                font-family: 'Inter', 'Segoe UI', Arial, sans-serif;
+                background: linear-gradient(120deg, #f8f9fa 0%, #e3e6ea 100%);
+                margin: 0;
+                padding: 2em;
+            }
+            h1 {
+                color: #1a2636;
+                margin-bottom: 2em;
+                font-weight: 600;
+                font-size: 2.2em;
+            }
+            ul {
+                list-style: none;
+                padding: 0;
+                max-width: 900px;
+                margin: 0 auto;
+            }
+            li {
+                background: #fff;
+                margin-bottom: 2em;
+                padding: 2em 2em 1em 2em;
+                border-radius: 16px;
+                box-shadow: 0 4px 24px rgba(30,40,60,0.08);
+                border-left: 8px solid #4fd18b;
+                transition: box-shadow 0.2s;
+            }
+            li.red {
+                border-left: 8px solid #e74c3c;
+            }
+            .guideline {
+                color: #2980b9;
+                font-size: 1.2em;
+                font-weight: 600;
+                margin-bottom: 1em;
+                display: block;
+            }
+            .summary {
+                margin-top: 0.5em;
+                color: #222;
+                font-size: 1em;
+            }
+            @media (max-width: 600px) {
+                body { padding: 0.5em; }
+                ul { padding: 0; }
+                li { padding: 1em; }
+            }
+            pre, code {
+                background: #f4f6fa;
+                border-radius: 6px;
+                padding: 0.2em 0.5em;
+                font-size: 0.95em;
+            }
+            blockquote {
+                border-left: 4px solid #4fd18b;
+                margin: 1em 0;
+                padding-left: 1em;
+                color: #555;
+                background: #f8f9fa;
+            }
+            table {
+                border-collapse: collapse;
+                width: 100%;
+                margin: 1em 0;
+            }
+            th, td {
+                border: 1px solid #e3e6ea;
+                padding: 0.5em 1em;
+            }
+            th {
+                background: #f4f6fa;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>Guideline Results</h1>
+        <ul>
+    <li class=""><span class="guideline">User accounts are not configured with password never expires or password not required.</span><div class="summary"><p><strong>Remediation Assessment – ASD Control on <code>PasswordNeverExpires</code> / <code>PasswordNotRequired</code></strong></p>
+
+<hr />
+
+<h3><strong>Current State Based on Analysis</strong></h3>
+
+<ul>
+<li><p><strong>DisablePasswordChange.txt</strong><br />
+✅ Sets <code>DisablePasswordChange</code> to <code>0</code> → allows password changes for machine accounts.<br />
+■ No code to configure user accounts with <code>PasswordNeverExpires</code> or <code>PasswordNotRequired</code>.  </p></li>
+<li><p><strong>MaximumPasswordAge.txt</strong><br />
+✅ Sets <code>MaximumPasswordAge</code> to <code>30</code> days for Netlogon machine account password changes.<br />
+■ No code to configure user accounts with unsafe password expiry settings.</p></li>
+</ul>
+
+<p>Both scripts operate at the <strong>machine account policy level</strong> and indirectly support sound password lifecycle management by ensuring periodic changes, not disabling expiry.</p>
+
+<hr />
+
+<h3><strong>Compliance Position</strong></h3>
+
+<p>The ASD control states:</p>
+
+<blockquote>
+  <p><em>"User accounts are not configured with password never expires or password not required."</em></p>
+</blockquote>
+
+<ul>
+<li><strong>No evidence</strong> in the provided scripts that this control is breached.  </li>
+<li>Functionality encourages password changes and enforces maximum age — in alignment with control intent.  </li>
+<li>No direct remediation of the scripts themselves is necessary.</li>
+</ul>
+
+<hr />
+
+<h3><strong>Why These Scripts Support Compliance</strong></h3>
+
+<ol>
+<li><p><strong>Promote Password Rotation:</strong>  </p>
+
+<ul>
+<li>Registry changes ensure domain-joined machine accounts change passwords automatically within the defined maximum age.</li>
+</ul></li>
+<li><p><strong>Avoid Weak Security Flags:</strong>  </p>
+
+<ul>
+<li>Neither script uses any commands or modifies attributes that would set <code>PasswordNeverExpires</code> or <code>PasswordNotRequired</code>.</li>
+</ul></li>
+<li><p><strong>ASD Requirement Alignment:</strong>  </p>
+
+<ul>
+<li>Ensuring maximum password ages and disallowing password change disablement matches IRAP expectations for good account hygiene.</li>
+</ul></li>
+</ol>
+
+<hr />
+
+<h3><strong>Recommendation for Ongoing Assurance</strong></h3>
+
+<p>Even though remediation of these scripts is not needed, to maintain and demonstrate compliance during an IRAP:</p>
+
+<ol>
+<li><p><strong>Environment Audit Script</strong><br />
+Use a PowerShell compliance check to ensure <strong>no existing accounts</strong> (user or service) violate the control:</p>
+
+<p>```powershell</p>
+
+<h1>Find accounts with PasswordNeverExpires or PasswordNotRequired enabled</h1>
+
+<p>Import-Module ActiveDirectory</p>
+
+<p>Get-ADUser -Filter * -Properties PasswordNeverExpires, PasswordNotRequired |
+    Where-Object { $<em>.PasswordNeverExpires -eq $true -or $</em>.PasswordNotRequired -eq $true } |
+    Select-Object Name, SamAccountName, PasswordNeverExpires, PasswordNotRequired
+```</p></li>
+<li><p><strong>Policy Enforcement</strong>  </p>
+
+<ul>
+<li>Use GPO or account creation scripts that explicitly set both flags to <code>$false</code> for all new accounts.</li>
+<li>Implement periodic scheduled tasks to scan and alert on violations.</li>
+</ul></li>
+<li><p><strong>Documentation</strong>  </p>
+
+<ul>
+<li>Record in the System Security Plan (SSP) that these scripts are part of secure password lifecycle controls.</li>
+<li>Note that compliance is further verified by periodic audits.</li>
+</ul></li>
+</ol>
+
+<hr />
+
+<p><strong>Final determination:</strong><br />
+✅ Direct remediation of these two scripts is <strong>not required</strong>.<br />
+⚠ Additional <strong>operational controls</strong> (auditing existing accounts, enforcing policy) are recommended to ensure that the control is met across the environment.</p>
+
+<hr />
+
+<p>If you’d like, I can create a <strong>small compliance enforcement script</strong> that automatically resets these flags on any offending accounts to guarantee compliance. Would you like me to prepare that next?</p>
+
+<p><strong>Summary of Findings – IRAP ASD Control Review</strong></p>
+
+<hr />
+
+<p><strong>Compliance Criterion:</strong><br />
+<em>User accounts must not be configured with <code>PasswordNeverExpires</code> or <code>PasswordNotRequired</code>.</em></p>
+
+<hr />
+
+<p><strong>Files Reviewed:</strong></p>
+
+<ol>
+<li><p><strong>DisablePasswordChange.txt</strong>  </p>
+
+<ul>
+<li>Writes registry value <code>DisablePasswordChange = 0</code> under <code>HKLM:\SYSTEM\CurrentControlSet\Services\Netlogon\Parameters</code>.  </li>
+<li>Effect: Ensures machine accounts are allowed to change passwords.  </li>
+<li>No code present that configures user accounts with <code>PasswordNeverExpires</code> or <code>PasswordNotRequired</code>.</li>
+</ul></li>
+<li><p><strong>MaximumPasswordAge.txt</strong>  </p>
+
+<ul>
+<li>Writes registry value <code>MaximumPasswordAge = 30</code> under the same <code>Netlogon\Parameters</code> key.  </li>
+<li>Effect: Sets maximum machine account password age to 30 days.  </li>
+<li>No code present that sets <code>PasswordNeverExpires</code> or <code>PasswordNotRequired</code> flags on user accounts.</li>
+</ul></li>
+</ol>
+
+<hr />
+
+<p><strong>Analysis Outcome:</strong>
+- <strong>Direct Checks:</strong> No <code>Set-ADUser</code> or equivalent commands that set <code>PasswordNeverExpires = $true</code> or <code>PasswordNotRequired = $true</code>.<br />
+- <strong>Indirect Checks:</strong> Registry modifications affect <strong>machine account password management</strong>, not human user account password expiry or requirement properties.<br />
+- <strong>Control Alignment:</strong> Both scripts encourage password changes and impose password max age, which supports the control intent.</p>
+
+<hr />
+
+<p><strong>Remediation Determination:</strong><br />
+- <strong>No direct remediation required</strong> for these scripts — they do not violate the ASD IRAP criterion.<br />
+- Recommend <strong>ongoing operational control</strong>: periodically audit all user and service accounts in the environment to confirm neither flag is set, using e.g.:</p>
+
+<p><code>powershell
+Import-Module ActiveDirectory
+Get-ADUser -Filter * -Properties PasswordNeverExpires, PasswordNotRequired |
+  Where-Object { $_.PasswordNeverExpires -eq $true -or $_.PasswordNotRequired -eq $true } |
+  Select Name, SamAccountName, PasswordNeverExpires, PasswordNotRequired
+</code></p>
+
+<hr />
+
+<p><strong>Conclusion:</strong><br />
+The provided PowerShell scripts (<code>DisablePasswordChange.txt</code>, <code>MaximumPasswordAge.txt</code>) meet the ASD compliance criterion — no accounts are configured with "password never expires" or "password not required" via these scripts.  </p>
+
+<p><strong>GREEN</strong><br />
+<strong>TERMINATE</strong></p>
+</div></li><li class=""><span class="guideline">The UserPassword attribute for user accounts is not used.</span><div class="summary"><p><strong>Remediation Assessment – ASD Control on <code>UserPassword</code> Attribute Usage</strong></p>
+
+<hr />
+
+<h3><strong>Current State Based on Analysis</strong></h3>
+
+<ul>
+<li><strong>configuration-data.txt</strong> is a <strong>Desired State Configuration (DSC)</strong> data file.</li>
+<li>No usage, setting, or referencing of the <code>UserPassword</code> attribute for user accounts exists in the file.</li>
+<li>All credentials‐related keys (<code>TenantId</code>, <code>ApplicationId</code>, <code>CertificateThumbprint</code>) are placeholders and not actual secrets.</li>
+<li><code>PSDscAllowPlainTextPassword = $true</code> is set, which allows DSC resources to handle plaintext passwords in configuration — this is <strong>unrelated to the <code>UserPassword</code> attribute</strong> but is a potential security concern.</li>
+</ul>
+
+<hr />
+
+<h3><strong>Compliance Position</strong></h3>
+
+<p><strong>Control requirement:</strong></p>
+
+<blockquote>
+  <p>The <code>UserPassword</code> attribute for user accounts is not used.</p>
+</blockquote>
+
+<p><strong>Status:</strong><br />
+✅ <strong>Complies</strong> – there is no evidence of <code>UserPassword</code> attribute usage in the provided script.</p>
+
+<p>Justification:
+- The script does not manipulate AD, LDAP, Azure AD, or other account directory fields for <code>UserPassword</code>.
+- Config file only contains metadata and high‐level DSC configuration flags.</p>
+
+<hr />
+
+<h3><strong>No Remediation Required to Meet the Criterion</strong></h3>
+
+<p>The script already satisfies the ASD requirement for this specific control.</p>
+
+<hr />
+
+<h3><strong>Optional Hardening Measures</strong></h3>
+
+<p>Even though the control is met, the following changes are recommended for <strong>overall IRAP‐aligned security posture</strong>:</p>
+
+<ol>
+<li><p><strong>Disable Plaintext Password Allowance</strong>  </p>
+
+<ul>
+<li>Change:
+<code>powershell
+PSDscAllowPlainTextPassword = $false
+</code>
+Then design your DSC resources to use <strong>encrypted credentials</strong> with certificates or the <strong><code>PsDscRunAsCredential</code></strong> mechanism.</li>
+<li>This minimises exposure risk of credentials in transit or at rest in configuration documents.</li>
+</ul></li>
+<li><p><strong>Secret Management</strong>  </p>
+
+<ul>
+<li>Ensure any credentials required for DSC are stored securely using:
+<ul>
+<li>Windows Credential Manager,</li>
+<li>Azure Key Vault,</li>
+<li>or PowerShell SecretManagement module.</li>
+</ul></li>
+<li>Avoid embedding any real credentials in plaintext configuration files.</li>
+</ul></li>
+<li><p><strong>Audit Policy</strong>  </p>
+
+<ul>
+<li>Document in the <strong>System Security Plan (SSP)</strong> that <code>UserPassword</code> is not used in any automation or configuration.</li>
+<li>Maintain a script or query to periodically search source repositories for references to <code>UserPassword</code> to ensure ongoing compliance.</li>
+</ul></li>
+</ol>
+
+<hr />
+
+<p><strong>Final determination:</strong><br />
+- <strong>Remediation for <code>UserPassword</code> criterion</strong>: <strong>Not needed</strong>.<br />
+- <strong>Recommended hardening</strong>: Disable <code>PSDscAllowPlainTextPassword</code> and implement encrypted credential handling for general IRAP security expectations.</p>
+
+<hr />
+
+<p>If you'd like, I can produce a <strong>compliance scanning PowerShell snippet</strong> that searches all your scripts and DSC configs for <code>UserPassword</code> references as an ongoing assurance measure. Would you like me to prepare that next?</p>
+
+<p><strong>Summary of Findings – IRAP ASD Control Review</strong></p>
+
+<hr />
+
+<p><strong>Compliance Criterion:</strong><br />
+<em>The <code>UserPassword</code> attribute for user accounts is not used.</em></p>
+
+<hr />
+
+<p><strong>File Reviewed:</strong><br />
+- <strong>configuration-data.txt</strong><br />
+  - Contains Desired State Configuration (DSC) metadata.<br />
+  - Keys: <code>NodeName = 'localhost'</code>, <code>PSDscAllowPlainTextPassword = $true</code>, <code>PSDscAllowDomainUser = $true</code>, placeholders for <code>TenantId</code>, <code>OrganizationName</code>, <code>ApplicationId</code>, <code>CertificateThumbprint</code>.<br />
+  - No references to, or manipulation of, the <code>UserPassword</code> attribute for any user accounts.</p>
+
+<hr />
+
+<p><strong>Analysis Outcome:</strong><br />
+- <strong>Direct Check:</strong> No <code>UserPassword</code> attribute usage found — no <code>Set-ADUser</code>, <code>New-ADUser</code>, LDAP modify operations or similar.<br />
+- <strong>Indirect Factors:</strong> <code>PSDscAllowPlainTextPassword = $true</code> could allow plaintext passwords to be handled in configurations, but this is unrelated to the specific <code>UserPassword</code> attribute usage prohibition in the criterion.<br />
+- <strong>Control Alignment:</strong> Meets the exact wording of the control; no evidence of non‑compliance.</p>
+
+<hr />
+
+<p><strong>Remediation Determination:</strong><br />
+- <strong>Not required</strong> for the <code>UserPassword</code> criterion — the script complies.<br />
+- <strong>Optional hardening:</strong> Consider setting <code>PSDscAllowPlainTextPassword = $false</code> and using encrypted secrets to align with broader IRAP security best practices.</p>
+
+<hr />
+
+<p><strong>Conclusion:</strong><br />
+The provided file (<code>configuration-data.txt</code>) complies with the ASD compliance criterion — the <code>UserPassword</code> attribute is not used.  </p>
+
+<p><strong>GREEN</strong><br />
+<strong>TERMINATE</strong></p>
+</div></li><li class=""><span class="guideline">The sIDHistory attribute for user accounts is not used.</span><div class="summary"><p><strong>Remediation Assessment – ASD Control on <code>sIDHistory</code> Attribute Usage</strong></p>
+
+<hr />
+
+<h3><strong>Current State Based on Analysis</strong></h3>
+
+<ul>
+<li><strong>Artefacts reviewed:</strong> None – no PowerShell scripts in scope for this control were provided.</li>
+<li><strong>Findings from artefacts:</strong> No code can be seen to read, set, or modify the <code>sIDHistory</code> attribute for user accounts.</li>
+<li><strong>Conclusion from artefacts alone:</strong> No evidence of non‑compliance — but due to the absence of artefacts, compliance cannot be asserted with certainty without additional verification.</li>
+</ul>
+
+<hr />
+
+<h3><strong>Compliance Position (Based on What's Provided)</strong></h3>
+
+<blockquote>
+  <p><em>"The sIDHistory attribute for user accounts is not used."</em></p>
+</blockquote>
+
+<ul>
+<li><strong>Status from provided artefacts:</strong><br />
+✅ <em>No violation detected in examined scope.</em></li>
+<li><strong>Caveat:</strong><br />
+The absence of scripts does not prove that <code>sIDHistory</code> is unused — the attribute can be manipulated outside of PowerShell scripting (e.g. via ADMT migrations, GUI admin tools, or third‑party utilities).</li>
+</ul>
+
+<hr />
+
+<h3><strong>Is Remediation Required?</strong></h3>
+
+<ul>
+<li><strong>For the provided artefacts:</strong> No change or remediation is required; they show no <code>sIDHistory</code> usage.</li>
+<li><strong>For the environment:</strong> A verification step <strong>is required</strong> to conclusively prove compliance, because the evidence set is incomplete.</li>
+</ul>
+
+<hr />
+
+<h3><strong>Recommended Verification Actions to Confirm Compliance</strong></h3>
+
+<ol>
+<li><p><strong>Active Directory Query Audit</strong><br />
+Run the following PowerShell command (requires AD module) to find any accounts with non‑null <code>sIDHistory</code>:</p>
+
+<p>```powershell
+Import-Module ActiveDirectory</p>
+
+<p>Get-ADUser -Filter * -Properties sIDHistory |
+  Where-Object { $_.sIDHistory -ne $null } |
+  Select-Object SamAccountName, sIDHistory
+```</p>
+
+<ul>
+<li>If no results are returned, <code>sIDHistory</code> is not in use for user accounts.</li>
+</ul></li>
+<li><p><strong>Change Management Review</strong><br />
+Examine past account migration or domain consolidation processes to ensure no use of <code>sIDHistory</code> in those workflows.</p></li>
+<li><p><strong>Policy &amp; Controls Review</strong>  </p>
+
+<ul>
+<li>Confirm that procedures explicitly prohibit use of <code>sIDHistory</code>.  </li>
+<li>Ensure administrators understand that setting the attribute is against ASD requirements and restrict permissions accordingly.</li>
+</ul></li>
+<li><p><strong>Ongoing Monitoring</strong>  </p>
+
+<ul>
+<li>Schedule periodic directory scans for <code>sIDHistory</code> usage.  </li>
+<li>Implement alerts for new accounts containing this attribute.</li>
+</ul></li>
+</ol>
+
+<hr />
+
+<p><strong>Final Determination:</strong><br />
+- <strong>Immediate remediation:</strong> Not required for the provided scope — no violations detected.<br />
+- <strong>Next steps for full IRAP assurance:</strong> Perform targeted Active Directory queries and procedural reviews to conclusively verify the <code>sIDHistory</code> attribute is not used anywhere in the environment.</p>
+
+<hr />
+
+<p>If you’d like, I can prepare <strong>a combined compliance check script</strong> to automatically scan for <code>sIDHistory</code>, <code>UserPassword</code>, and unsafe password flags so you can cover multiple IRAP Annex controls in one run. Would you like me to prepare that?</p>
+
+<p><strong>Summary of Findings – IRAP ASD Control Review</strong></p>
+
+<hr />
+
+<p><strong>Compliance Criterion:</strong><br />
+<em>The <code>sIDHistory</code> attribute for user accounts is not used.</em></p>
+
+<hr />
+
+<p><strong>Files Reviewed:</strong><br />
+- None – no PowerShell scripts were provided for review.</p>
+
+<hr />
+
+<p><strong>Analysis Outcome:</strong><br />
+- <strong>Direct Check:</strong> No evidence in the provided artefacts of any script reading, setting, or modifying the <code>sIDHistory</code> attribute for user accounts.<br />
+- <strong>Scope Limitation:</strong> The absence of files means we cannot definitively assert that <code>sIDHistory</code> is unused in the environment — only that we found no usage in the (empty) supplied set.</p>
+
+<hr />
+
+<p><strong>Compliance Determination:</strong><br />
+From the provided material alone, the criterion is met — there is no indication of <code>sIDHistory</code> being used.<br />
+However, broader IRAP assurance should include a directory-level audit and process review to confirm no accounts have a non-null <code>sIDHistory</code>.</p>
+
+<hr />
+
+<p><strong>Recommended Verification Approach:</strong>
+- Run an AD query:
+```powershell
+Import-Module ActiveDirectory</p>
+
+<p>Get-ADUser -Filter * -Properties sIDHistory |
+  Where-Object { $_.sIDHistory -ne $null } |
+  Select SamAccountName, sIDHistory
+``<code>
+- Review account migration/change management processes to ensure no</code>sIDHistory<code>use.
+- Restrict privileges to set or modify</code>sIDHistory`.</p>
+
+<hr />
+
+<p><strong>Conclusion:</strong><br />
+Based solely on provided artefacts, <strong>complies</strong> with the criterion.</p>
+
+<p><strong>GREEN</strong><br />
+<strong>TERMINATE</strong></p>
+</div></li><li class="red"><span class="guideline">User accounts are checked at least weekly for the presence of the sIDHistory attribute.</span><div class="summary"><p><strong>Remediation Strategy – ASD Control: Weekly check for <code>sIDHistory</code> on user accounts</strong>  </p>
+
+<hr />
+
+<h2><strong>Current Status (from analysis)</strong></h2>
+
+<ul>
+<li>No provided artefacts demonstrate that the environment is performing the mandated <strong>weekly check</strong> for <code>sIDHistory</code> on user accounts.  </li>
+<li><strong>Control intent:</strong> To ensure that the deprecated / risky SID migration attribute is not being used, and detect any unexpected appearances promptly, per ASD requirements.</li>
+</ul>
+
+<hr />
+
+<h2><strong>Remediation Approach</strong></h2>
+
+<ol>
+<li><p><strong>Implement an Automated Weekly AD Scan (PowerShell)</strong></p>
+
+<ul>
+<li>Create a PowerShell script that queries Active Directory for all user accounts with a non‑null <code>sIDHistory</code> attribute.</li>
+<li>Output the results to a secured log or send an alert if any are found.</li>
+</ul></li>
+<li><p><strong>Schedule Execution</strong></p>
+
+<ul>
+<li>Deploy the script via Windows Task Scheduler, Azure Automation, or your enterprise job runner.</li>
+<li>Run it <strong>at least once per week</strong> in every AD forest / domain in scope.</li>
+</ul></li>
+<li><p><strong>Response Process</strong></p>
+
+<ul>
+<li>Establish a documented operational response procedure:
+<ul>
+<li>Investigate any accounts returned by the check.</li>
+<li>Remove <code>sIDHistory</code> if it is not required for a legitimate, approved, and risk‑assessed migration.</li>
+<li>Record all findings, even if null.</li>
+</ul></li>
+</ul></li>
+<li><p><strong>Evidence Retention for IRAP</strong></p>
+
+<ul>
+<li>Maintain:
+<ul>
+<li>Copies of weekly run logs or reports.</li>
+<li>The script version in your configuration management repository.</li>
+<li>Task Scheduler / automation job definition showing the schedule and command.</li>
+</ul></li>
+<li>These artefacts will demonstrate compliance during the IRAP assessment.</li>
+</ul></li>
+</ol>
+
+<hr />
+
+<h2><strong>Example PowerShell Script</strong></h2>
+
+<p>```powershell
+&lt;#
+.SYNOPSIS
+Weekly check for sIDHistory attribute on user accounts.
+.DESCRIPTION
+Queries Active Directory for any user accounts with a populated sIDHistory attribute.
+Output is saved to a dated CSV in a secure location and alerts can be sent via email.</p>
+
+<h1>&gt;</h1>
+
+<p>Import-Module ActiveDirectory</p>
+
+<h1>Set output directory (secure it with restricted access)</h1>
+
+<p>$OutputDir = "C:\SecureLogs\SIDHistoryChecks"
+if (!(Test-Path $OutputDir)) {
+    New-Item -ItemType Directory -Path $OutputDir | Out-Null
+}</p>
+
+<h1>Filename with timestamp</h1>
+
+<p>$DateStamp = Get-Date -Format "yyyyMMdd<em>HHmmss"
+$OutputFile = Join-Path $OutputDir "SIDHistoryCheck</em>$DateStamp.csv"</p>
+
+<h1>Query AD</h1>
+
+<p>$AccountsWithSIDHistory = Get-ADUser -Filter * -Properties sIDHistory |
+    Where-Object { $_.sIDHistory -ne $null } |
+    Select-Object Name, SamAccountName, DistinguishedName, sIDHistory</p>
+
+<h1>Export results</h1>
+
+<p>$AccountsWithSIDHistory | Export-Csv -Path $OutputFile -NoTypeInformation</p>
+
+<h1>Optional: send email alert if any found</h1>
+
+<p>if ($AccountsWithSIDHistory.Count -gt 0) {
+    Send-MailMessage -To "security-team@example.gov.au" <code>
+                     -From "ADMonitor@example.gov.au"</code>
+                     -Subject "ALERT: Accounts with sIDHistory Detected" <code>
+                     -Body "Please review the attached report for accounts with sIDHistory."</code>
+                     -Attachments $OutputFile `
+                     -SmtpServer "mail.example.gov.au"
+}
+```</p>
+
+<hr />
+
+<h2><strong>Scheduling Implementation Example – Windows Task Scheduler</strong></h2>
+
+<ol>
+<li>Open <strong>Task Scheduler</strong> → <strong>Create Task</strong>.</li>
+<li><strong>General</strong> tab: Run whether user is logged on or not, and with highest privileges.</li>
+<li><strong>Triggers</strong>: New Trigger → Weekly → select day/time.</li>
+<li><strong>Actions</strong>: Start a Program:<br />
+<code>powershell.exe -ExecutionPolicy Bypass -File "C:\Scripts\Check-SIDHistory.ps1"</code></li>
+<li><strong>Conditions</strong> &amp; <strong>Settings</strong>: Adjust for your environment.</li>
+<li>Ensure the run account has permissions to query AD and write to log location.</li>
+</ol>
+
+<hr />
+
+<h2><strong>Documentation Steps for IRAP Evidence</strong></h2>
+
+<ul>
+<li>In the <strong>System Security Plan (SSP)</strong>, describe:
+<ul>
+<li>The script’s purpose and storage location.</li>
+<li>The weekly execution method (Task Scheduler/Azure Automation).</li>
+<li>The retention period and protection of log outputs.</li>
+</ul></li>
+<li>Keep procedure documents detailing:
+<ul>
+<li>Investigation steps for any hits.</li>
+<li>Approval processes for legitimate <code>sIDHistory</code> use (e.g. during migrations).</li>
+</ul></li>
+</ul>
+
+<hr />
+
+<p><strong>Final Determination:</strong><br />
+- <strong>Required remediation:</strong> Implement an automated, logged, and scheduled weekly scan for <code>sIDHistory</code> and document the process &amp; evidence.<br />
+- <strong>With the above script and process in place</strong>, compliance can be demonstrated confidently to an IRAP assessor.</p>
+
+<hr />
+
+<p>If you like, I can also supply a <strong>hardened variant</strong> of this script with signed execution, encrypted log storage, and integration into SIEM for continuous monitoring. Would you like me to prepare that?</p>
+
+<p><strong>Summary of Findings – IRAP ASD Control Review</strong></p>
+
+<hr />
+
+<p><strong>Compliance Criterion:</strong><br />
+<em>User accounts are checked at least weekly for the presence of the <code>sIDHistory</code> attribute.</em></p>
+
+<hr />
+
+<p><strong>Files Reviewed:</strong><br />
+- None – no PowerShell scripts or other artefacts were provided for review.</p>
+
+<hr />
+
+<p><strong>Analysis Outcome:</strong><br />
+- <strong>Evidence check:</strong> Nothing in the provided artefacts shows a query of <code>sIDHistory</code> or any logic to check it on user accounts.<br />
+- <strong>Schedule verification:</strong> No evidence of any weekly job, scheduler configuration, or automation to run such checks.<br />
+- <strong>Conclusion from limited scope:</strong> Based solely on the supplied material, the requirement is not demonstrated – compliance cannot be established without further evidence.</p>
+
+<hr />
+
+<p><strong>Remediation Recommendation:</strong><br />
+- Develop and deploy a PowerShell script to query AD for accounts with a non‑null <code>sIDHistory</code> attribute, for example:</p>
+
+<p><code>powershell
+Import-Module ActiveDirectory
+Get-ADUser -Filter * -Properties sIDHistory |
+  Where-Object { $_.sIDHistory -ne $null } |
+  Select-Object Name, SamAccountName, sIDHistory |
+  Export-Csv "C:\SecureLogs\SIDHistoryCheck_$(Get-Date -Format 'yyyyMMdd').csv" -NoTypeInformation
+</code></p>
+
+<ul>
+<li>Schedule it to run <strong>at least weekly</strong> (Task Scheduler, Azure Automation, etc.).</li>
+<li>Log results securely and retain output as evidence.</li>
+<li>Document the procedure in the System Security Plan and maintain an incident response process for any findings.</li>
+</ul>
+
+<hr />
+
+<p><strong>Conclusion:</strong><br />
+From the provided artefacts alone, there is no evidence this control is met.<br />
+<strong>RED</strong><br />
+<strong>TERMINATE</strong></p>
+</div></li><li class=""><span class="guideline">Account properties accessible by unprivileged users are not used to store passwords.</span><div class="summary"><p><strong>Remediation Assessment – ASD Control: Account properties accessible by unprivileged users are not used to store passwords</strong>  </p>
+
+<hr />
+
+<h3><strong>Current State Based on Analysis</strong></h3>
+
+<ul>
+<li><strong>Scripts reviewed:</strong>
+<ul>
+<li><code>DisablePasswordChange.txt</code> → Registry setting to allow machine account password changes.</li>
+<li><code>MaximumPasswordAge.txt</code> → Registry setting to set maximum password age for machine accounts.</li>
+</ul></li>
+<li><strong>Findings:</strong>
+<ul>
+<li>Neither script interacts with <em>any</em> user account properties in Active Directory or other identity stores.</li>
+<li>No passwords (plaintext, hashed, or otherwise) are stored or handled.</li>
+<li>No properties accessible to unprivileged users (e.g., <code>description</code>, <code>info</code>, <code>extensionAttributes</code>) are referenced.</li>
+</ul></li>
+</ul>
+
+<hr />
+
+<h3><strong>Compliance Position</strong></h3>
+
+<p><strong>Control requirement:</strong></p>
+
+<blockquote>
+  <p>Account properties accessible by unprivileged users are not used to store passwords.</p>
+</blockquote>
+
+<p><strong>Based on provided artefacts:</strong>
+- ✅ <strong>Compliant</strong> – The reviewed scripts do not introduce any storage of password data, and therefore do not violate the control.</p>
+
+<p><strong>Justification:</strong>
+1. No interaction with account properties — registry-only changes affect machine account password policy, not user directory objects.
+2. No manipulation or recording of sensitive credential data.
+3. No risk of exposure via unprivileged user-readable attributes.</p>
+
+<hr />
+
+<h3><strong>Remediation Required?</strong></h3>
+
+<ul>
+<li><p><strong>For the provided scripts:</strong><br />
+No changes necessary — the scripts meet the control requirement as written.</p></li>
+<li><p><strong>For the wider environment:</strong><br />
+While these individual artefacts are compliant, IRAP compliance requires demonstrated assurance across all systems and processes.<br />
+<strong>Recommendation:</strong> Conduct an environment-wide audit to ensure no other tooling or administrative processes violate this control.</p></li>
+</ul>
+
+<hr />
+
+<h3><strong>Additional Assurance Activities</strong></h3>
+
+<p>To strengthen assurance and produce IRAP‑ready evidence:</p>
+
+<ol>
+<li><p><strong>Audit for Insecurely Stored Passwords in AD</strong><br />
+Use PowerShell to enumerate potentially unprivileged‑readable attributes and scan them for password-like patterns:  </p>
+
+<p>```powershell
+Import-Module ActiveDirectory</p>
+
+<h1>Attributes to check</h1>
+
+<p>$attributes = @('description', 'info', 'extensionAttribute1', 'extensionAttribute2', 'extensionAttribute3')</p>
+
+<p>foreach ($attr in $attributes) {
+    Write-Output "Checking attribute: $attr"
+    Get-ADUser -Filter * -Properties $attr |
+        Where-Object { $<em>.$attr -match 'password' -or $</em>.$attr -match 'pass' } |
+        Select-Object SamAccountName, Name, @{Name=$attr;Expression={$_.$attr}}
+}
+```</p>
+
+<p>Review any findings for inappropriate password storage.</p></li>
+<li><p><strong>Access Rights Verification</strong>  </p>
+
+<ul>
+<li>Confirm which AD attributes are readable by non-privileged accounts (default groups like <strong>Authenticated Users</strong>).</li>
+<li>Adjust permissions to restrict read access where possible.</li>
+</ul></li>
+<li><p><strong>Policy Enforcement</strong>  </p>
+
+<ul>
+<li>Update admin SOPs to explicitly forbid storing passwords in any account properties.</li>
+<li>Provide admin training to reinforce secure credential handling.</li>
+</ul></li>
+<li><p><strong>Ongoing Monitoring</strong>  </p>
+
+<ul>
+<li>Schedule periodic automated scans and review logs regularly.</li>
+<li>Integrate scans into your SIEM to alert on new instances of potential password storage.</li>
+</ul></li>
+</ol>
+
+<hr />
+
+<p><strong>Final Determination:</strong><br />
+- <strong>Scripts provided</strong>: No remediation required — they comply with the control.<br />
+- <strong>Recommended actions</strong>: Perform whole‑of‑environment attribute audit as above to demonstrate and maintain compliance over time.</p>
+
+<hr />
+
+<p>If you like, I can bundle the <strong><code>sIDHistory</code> weekly scan</strong> and this <strong>password-in-attributes audit</strong> into a single scheduled compliance script suite so you meet multiple ASD controls in one process. Would you like me to prepare that?</p>
+
+<p><strong>Summary of Findings – IRAP ASD Control Review</strong></p>
+
+<hr />
+
+<p><strong>Compliance Criterion:</strong><br />
+<em>Account properties accessible by unprivileged users are not used to store passwords.</em></p>
+
+<hr />
+
+<p><strong>Files Reviewed:</strong><br />
+- <strong>DisablePasswordChange.txt</strong> – sets a registry key to allow machine account password changes.<br />
+- <strong>MaximumPasswordAge.txt</strong> – sets a registry key to define maximum machine account password age.</p>
+
+<hr />
+
+<p><strong>Analysis Outcome:</strong><br />
+- Neither script interacts with any account properties in Active Directory or other directories.<br />
+- No handling, storage, or embedding of passwords is present in code.<br />
+- No properties accessible to unprivileged users (e.g. <code>description</code>, <code>info</code>, <code>extensionAttribute*</code>) are referenced.<br />
+- Scope is confined to local registry policy for Netlogon and machine accounts, not user attributes.</p>
+
+<hr />
+
+<p><strong>Compliance Determination:</strong><br />
+From the provided artefacts, these scripts comply with the ASD requirement: there is no use of account properties accessible by unprivileged users to store passwords.</p>
+
+<p><strong>Optional assurance actions for IRAP:</strong><br />
+- Conduct environment‑wide audits for password patterns in readable attributes:<br />
+  <code>powershell
+  Import-Module ActiveDirectory
+  $attrs = @('description','info','extensionAttribute1','extensionAttribute2','extensionAttribute3')
+  foreach ($a in $attrs) {
+      Get-ADUser -Filter * -Properties $a |
+        Where-Object { $_.$a -match 'password' -or $_.$a -match 'pass' } |
+        Select SamAccountName, Name, @{Name=$a;Expression={$_.$a}}
+  }
+</code>
+- Verify and limit read‑access permissions on non‑sensitive attributes.
+- Document policies forbidding password storage in such fields and train admins accordingly.</p>
+
+<hr />
+
+<p><strong>Conclusion:</strong><br />
+Based on provided materials, <strong>compliant</strong> with this control.</p>
+
+<p><strong>GREEN</strong><br />
+<strong>TERMINATE</strong></p>
+</div></li><li class=""><span class="guideline">User account passwords do not use reversible encryption.</span><div class="summary"><p><strong>Remediation Assessment – ASD Control: User account passwords do not use reversible encryption</strong>  </p>
+
+<hr />
+
+<h3><strong>Current State (from analysis)</strong></h3>
+
+<ul>
+<li><strong>Script reviewed:</strong> <code>MaximumPasswordAge.txt</code>  </li>
+<li><strong>Function:</strong> Sets the <code>MaximumPasswordAge</code> registry entry under Netlogon Parameters to 30 days (machine account password policy).</li>
+<li><strong>Findings:</strong>  
+<ul>
+<li>No code that configures user accounts with <code>AllowReversiblePasswordEncryption</code>.  </li>
+<li>No modification of the <code>UserAccountControl</code> bit for reversible encryption.  </li>
+<li>No changes to Group Policy settings for “Store passwords using reversible encryption.”  </li>
+</ul></li>
+</ul>
+
+<p><strong>Conclusion for this specific artefact:</strong><br />
+✅ <strong>Compliant</strong> – no remediation required for the provided script. It does not impact this control.</p>
+
+<hr />
+
+<h3><strong>Environment-wide Assurance Requirements</strong></h3>
+
+<p>The IRAP control demands <strong>system-wide</strong> assurance that reversible password encryption is <strong>not used</strong> for <em>any</em> user accounts. This is normally enforced via:</p>
+
+<ol>
+<li><strong>Active Directory account settings</strong> – ensure the <code>AllowReversiblePasswordEncryption</code> flag is <code>$false</code> for every account.</li>
+<li><strong>Group Policy object</strong> – verify the policy <code>Store passwords using reversible encryption</code> is set to <strong>Disabled</strong> for relevant GPOs.</li>
+</ol>
+
+<hr />
+
+<h3><strong>Recommended Verification Steps</strong></h3>
+
+<h4><strong>1. Active Directory Query</strong></h4>
+
+<p>Run this PowerShell command to ensure no accounts allow reversible encryption:</p>
+
+<p>```powershell
+Import-Module ActiveDirectory</p>
+
+<p>Get-ADUser -Filter * -Properties AllowReversiblePasswordEncryption |
+    Where-Object { $_.AllowReversiblePasswordEncryption -eq $true } |
+    Select-Object SamAccountName, Name, DistinguishedName
+```</p>
+
+<ul>
+<li><strong>Expected result:</strong> No output (no accounts allow reversible password encryption).</li>
+<li>Document the execution and outcome as IRAP evidence.</li>
+</ul>
+
+<hr />
+
+<h4><strong>2. Check Group Policy Settings</strong></h4>
+
+<ul>
+<li>Open the Group Policy Management Console (GPMC).</li>
+<li>Navigate to:
+<code>
+Computer Configuration → Windows Settings → Security Settings → Account Policies → Password Policy
+</code></li>
+<li>Verify <strong>“Store passwords using reversible encryption”</strong> is <strong>Disabled</strong> in:
+<ul>
+<li>Default Domain Policy</li>
+<li>Any other applicable password policy GPO</li>
+</ul></li>
+<li>Capture screenshots or GPO reports showing the setting as <em>Disabled</em> for IRAP evidence.</li>
+</ul>
+
+<hr />
+
+<h4><strong>3. Ongoing Assurance</strong></h4>
+
+<ul>
+<li>Schedule a periodic (e.g., monthly) script run to re-check all AD accounts.</li>
+<li>Integrate findings into security monitoring and change management workflows.</li>
+<li>Lock down account creation/modification processes so that reversible encryption cannot be set inadvertently.</li>
+</ul>
+
+<hr />
+
+<h3><strong>Final Determination</strong></h3>
+
+<ul>
+<li><strong>Script:</strong> No remediation required – it is compliant with the control.  </li>
+<li><strong>Organisation-wide compliance:</strong> Requires validation through AD queries and Group Policy reviews.  </li>
+<li><strong>IRAP Evidence:</strong> Provide AD scan results and GPO configuration exports/screenshots to the assessor.</li>
+</ul>
+
+<hr />
+
+<p>If you want, I can give you a <strong>combined “password controls” audit script</strong> that will scan for reversible encryption, <code>sIDHistory</code>, “Password Never Expires”, and other related flags in one run, which can be scheduled for regular compliance assurance. Would you like me to prepare that?</p>
+
+<p><strong>Summary of Findings – IRAP ASD Control Review</strong></p>
+
+<hr />
+
+<p><strong>Compliance Criterion:</strong><br />
+<em>User account passwords do not use reversible encryption.</em></p>
+
+<hr />
+
+<p><strong>File Reviewed:</strong><br />
+- <strong>MaximumPasswordAge.txt</strong><br />
+  - Sets <code>MaximumPasswordAge</code> in the Netlogon Parameters registry key to 30 days.
+  - Affects machine account password policy only.</p>
+
+<hr />
+
+<p><strong>Analysis Outcome:</strong><br />
+- No commands present that enable <code>AllowReversiblePasswordEncryption</code> on user accounts.<br />
+- No <code>UserAccountControl</code> bit manipulation related to reversible encryption.<br />
+- No Group Policy changes enabling “Store passwords using reversible encryption.”<br />
+- Script operates solely at the machine account password policy level — no user account changes.</p>
+
+<hr />
+
+<p><strong>Compliance Determination:</strong><br />
+From the provided artefact, the script is <strong>compliant</strong> — it does not cause or permit reversible encryption of user account passwords.</p>
+
+<hr />
+
+<p><strong>Recommendations for IRAP Evidence and Assurance:</strong><br />
+While this script passes, the control applies environment-wide. To confirm compliance across the organisation:</p>
+
+<ol>
+<li><p><strong>Active Directory Check:</strong>
+<code>powershell
+Import-Module ActiveDirectory
+Get-ADUser -Filter * -Properties AllowReversiblePasswordEncryption |
+    Where-Object { $_.AllowReversiblePasswordEncryption -eq $true } |
+    Select SamAccountName, Name, DistinguishedName
+</code>
+<em>Expected result: no accounts returned.</em></p></li>
+<li><p><strong>Group Policy Review:</strong>  </p>
+
+<ul>
+<li>In GPMC, verify “Store passwords using reversible encryption” is set to <strong>Disabled</strong> in all applicable GPOs.</li>
+<li>Capture reports/screenshots for the assessor.</li>
+</ul></li>
+<li><p><strong>Periodic Monitoring:</strong>  </p>
+
+<ul>
+<li>Automate and schedule the above AD check (e.g., monthly).</li>
+<li>Integrate into your security change management process.</li>
+</ul></li>
+</ol>
+
+<hr />
+
+<p><strong>Conclusion:</strong><br />
+Based on the provided script, <strong>compliant</strong> with the stated control.</p>
+
+<p><strong>GREEN</strong><br />
+<strong>TERMINATE</strong></p>
+</div></li></ul></body></html>

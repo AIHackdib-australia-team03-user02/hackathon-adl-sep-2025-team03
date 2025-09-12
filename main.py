@@ -1,21 +1,20 @@
-from autogen_core.models import UserMessage
-from autogen_agentchat.agents import AssistantAgent, UserProxyAgent
+from autogen_agentchat.agents import AssistantAgent
 from autogen_agentchat.conditions import MaxMessageTermination, TextMentionTermination
-from autogen_agentchat.messages import BaseAgentEvent, BaseChatMessage
 from autogen_agentchat.teams import SelectorGroupChat
 from autogen_agentchat.ui import Console
+from autogen_core.tools import FunctionTool
 from autogen_ext.models.openai import AzureOpenAIChatCompletionClient
 from dotenv import load_dotenv
-from typing import List, Sequence
 import asyncio
 import os
 
 
 # Note: This example uses mock tools instead of real APIs for demonstration purposes
 import glob
-import ast
 import aiofiles
-async def search_blueprint_tool(query: str) -> str:
+
+async def search_blueprint(query: str) -> str:
+    print("GO\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nWE HIT THE TOOL LETS GO\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n")
     input_dir = os.path.join(os.getcwd(), "input_files")
     file_paths = [f for f in glob.glob(f"{input_dir}/**/*.txt", recursive=True)]
     if not file_paths:
@@ -29,7 +28,7 @@ Given the following query:
 ---
 Here is a list of available blueprint files:
 {chr(10).join(file_paths)}
-Which files might be relevant to answering the query? It is better to give too many than too few. Return a comma separated list of file paths.
+Which files are most relevant to answering the query? Return a comma separated list of file paths.
 """
     #print(prompt)
     from autogen_core.models import UserMessage
@@ -37,8 +36,11 @@ Which files might be relevant to answering the query? It is better to give too m
     # Extract content and clean up code block and raw string prefixes
     #print(response.content)    # Remove code block markers
     content = response.content.split(",")
-    #print("Chose files:")
-    #print("\n".join(content))
+    print("Chose files:")
+    print("\n".join(content))
+    if not content:
+        print("OOPSY WOOPSY!!!")
+        return "Error retrieving files :("
     contents = []
     for path in content:
         path = path.strip().strip("`").strip('"').strip("'")
@@ -70,6 +72,8 @@ Which files might be relevant to answering the query? It is better to give too m
                 file_content = None
                 print("ERROR: " + str(e))
         if file_content is not None:
+            if file_content and len(file_content) > 4096:
+                file_content = file_content[:4096] + "\n...[truncated]..."
             contents.append(f"--- {os.path.basename(path)} ---\n{file_content}")
         else:
             contents.append(f"--- {os.path.basename(path)} ---\n[Error reading file: Could not decode with utf-16, utf-8-sig, utf-8, latin-1, ascii, or binary utf-8: {file_content}]")
@@ -96,7 +100,7 @@ planning_agent = AssistantAgent(
     You are a planning agent.
     Your job is to break down complex tasks into smaller, manageable subtasks.
     Your team members are:
-        SearchBlueprintAgent: Searches for information in the design of the system. Provide the query as a string as the parameter.
+        SearchBlueprintAgent: Searches for information
         DataAnalystAgent: Analyses the information given
         RemediationAgent: Provides a remediation strategy based on the analysis.
 
@@ -104,19 +108,29 @@ planning_agent = AssistantAgent(
 
     When assigning tasks, use this format:
     1. <agent> : <task>
-
+    
     The RemediationAgent should only be assigned a task once the DataAnalystAgent has completed its analysis.
-    After all tasks are complete, summarize the findings in full detail, as the history will not be shown, giving references to the file-names that you referred to, and end with "GREEN" if it meets the criteria, or "RED" if it doesn't, then finally "TERMINATE".
+    If the SearchBlueprintAgent cannot retrieve any relevant files after a few tries, proceed with the remediation anyway based on the information available.
+    After all tasks are complete, summarize the findings in full detail, as the history will not be shown, giving references to the file-names that you referred to, and re-stating any scripts provided by the remediation agent, and end with "GREEN" if it meets the criteria, or "RED" if it doesn't, then finally "TERMINATE".
     """,
 )
 
-web_search_agent = AssistantAgent(
+
+
+# async def blueprint_search_tool(query: str) -> str:
+#     return await search_blueprint(query)
+
+# search_blueprint_tool = FunctionTool(search_blueprint, description="Use this tool to search the system blueprint for relevant information.", strict=True)
+# print(search_blueprint_tool.schema)
+
+
+blueprint_search_agent = AssistantAgent(
     "SearchBlueprintAgent",
-    description="An agent for retrieving information about the system under analysis.",
-    tools=[search_blueprint_tool],
+    description="An agent for retrieving Powershell scripts.",
+    tools=[search_blueprint],
     model_client=model_client,
     system_message="""
-    You are a document search agent.
+    You are a search agent.
     Your only tool is search_tool - use it to find information.
     You make only one search call at a time.
     """,
@@ -124,21 +138,21 @@ web_search_agent = AssistantAgent(
 
 data_analyst_agent = AssistantAgent(
     "DataAnalystAgent",
-    description="An agent for analysing criteria. Please provide the full scripts for me.",
+    description="An agent for analysing criteria. You speak concisely, avoiding unnecessary elaboration.",
     model_client=model_client,
     tools=[],
     system_message="""
-    Once scripts have been provided, analyse whether there is evidence of the query criteria being satisfied.
+    Once scripts have been provided, analyse whether there is evidence of the query criteria being satisfied. Speak concisly, avoiding unnecessary elaboration.
     """,
 )
 
 remediation_agent = AssistantAgent(
     "RemediationAgent",
-    description="An agent for providing a remediation strategy, once the analysis is complete.",
+    description="An agent for providing a precise, concise remediation strategy, once the analysis is complete.",
     model_client=model_client,
     tools=[],
     system_message="""
-    Once the analysis has been completed, provide a strategy for remediation - for some criteria, this might involve new scripts being provided, for others it will be policy recommendations.
+    Once the analysis has been completed, provide a strategy for remediation - for some criteria, this might involve new scripts being provided, for others it will be policy recommendations. If a new script is appropriate, give only a very brief explanation, then provide the script. Speak concisly, avoiding unnecessary elaboration.
     """,
 )
 
@@ -191,28 +205,29 @@ for row in ws.iter_rows(min_row=2):  # skip header
 
 load_dotenv()
 
+team = SelectorGroupChat(
+    [planning_agent, blueprint_search_agent, data_analyst_agent, remediation_agent],
+
+    #[planning_agent, web_search_agent],
+    model_client=model_client,
+    termination_condition=termination,
+    selector_prompt=selector_prompt,
+    selector_func=selector_func,
+    allow_repeated_speaker=True,  # Allow an agent to speak multiple turns in a row.
+    max_turns=7,
+)
+
 
 
 async def main():
+    print (blueprint_search_tool.schema)
     results = []
     for guideline_description in criteria:
         task = f"Determine if this criteria has been satisfied with the current setup scripts: '{guideline_description}'"
         print(f"\n\n=== Running task: {guideline_description} ===\n\n")
-        team = SelectorGroupChat(
-            [planning_agent, web_search_agent, data_analyst_agent, remediation_agent],
-
-            #[planning_agent, web_search_agent],
-            model_client=model_client,
-            termination_condition=termination,
-            selector_prompt=selector_prompt,
-            selector_func=selector_func,
-            allow_repeated_speaker=True,  # Allow an agent to speak multiple turns in a row.
-            max_turns=7,
-        )
-        
-
-        result = await Console(team.run_stream(task=task))
         team.reset()
+        result = await Console(team.run_stream(task=task))
+
         # Only append the final message (summary) from the result
         if hasattr(result, "messages") and result.messages:
             final_message = result.messages[-2].content
