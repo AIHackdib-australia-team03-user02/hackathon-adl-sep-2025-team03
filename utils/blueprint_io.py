@@ -23,6 +23,16 @@ _EXT_PRIORITY: Dict[str, int] = {
 }
 _ALLOWED_EXTS = set(_EXT_PRIORITY.keys())
 
+# agents/run_blueprint.py
+def run_blueprint_assessment(workdir: str, outdir: str):
+    """
+    Do your existing work here. Yield or print log lines as you go.
+    Write any outputs into outdir.
+    """
+    yield f"Starting assessment for {workdir}"
+    # ... your current logic ...
+    yield "Done."
+
 # ---------- zip / dir handling ----------
 def _ensure_root_from_zip(zip_path: str) -> str:
     root = tempfile.mkdtemp(prefix="sysroot_")

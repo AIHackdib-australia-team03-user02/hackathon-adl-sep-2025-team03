@@ -45,3 +45,4 @@ urllib3>=2.5.0
 wheel>=0.45.1
 xgboost>=2.1.4
 openpyxl>=3.1.5
+streamlit>=1.36
