@@ -28,3 +28,5 @@ Running docker:
 > docker build -t hackathon-adl-sep-2025-team03 . 
 > docker run --rm -it hackathon-adl-sep-2025-team03
 ```
+
+See it live at https://remediationapp-team3.azurewebsites.net/ !
