@@ -16,19 +16,40 @@ RUNS_ROOT.mkdir(exist_ok=True, parents=True)
 
 ASSETS = REPO_ROOT / "ui" / "assets"
 HERO = ASSETS / "hero.png"
-LOGO = ASSETS / "logo.png"
+# prefer your GIF logo; fallback to logo.gif then logo.png
+LOGO_EVE_GIF = ASSETS / "E V E.gif"
+LOGO_GIF = ASSETS / "logo.gif"
+LOGO_PNG = ASSETS / "logo.png"
+LOGO_FILE = LOGO_EVE_GIF if LOGO_EVE_GIF.exists() else (LOGO_GIF if LOGO_GIF.exists() else LOGO_PNG)
+
 RUN_GIF = ASSETS / "running.gif"   # optional fun animation
+
+TEAM_NAME = "Team Opal"
 
 def _img_b64(p: Path) -> str:
     with open(p, "rb") as f:
         return base64.b64encode(f.read()).decode("ascii")
 
+def _mime_for(p: Path) -> str:
+    suf = (p.suffix or "").lower()
+    return "image/gif" if suf == ".gif" else ("image/png" if suf == ".png" else "image/jpeg")
+
 hero_b64 = _img_b64(HERO) if HERO.exists() else None
-logo_b64 = _img_b64(LOGO) if LOGO.exists() else None
+logo_b64 = _img_b64(LOGO_FILE) if LOGO_FILE.exists() else None
+logo_mime = _mime_for(LOGO_FILE) if LOGO_FILE.exists() else "image/png"
 run_gif_b64 = _img_b64(RUN_GIF) if RUN_GIF.exists() else None
 
+# Favicon (note: most browsers won't animate GIF favicons, but this sets it correctly)
+if logo_b64:
+    st.markdown(
+        f"""
+<link rel="icon" type="{logo_mime}" href="data:{logo_mime};base64,{logo_b64}">
+<link rel="shortcut icon" type="{logo_mime}" href="data:{logo_mime};base64,{logo_b64}">
+""",
+        unsafe_allow_html=True,
+    )
+
 # ---------- Styles (taller header using reclaimed top space) ----------
-# Header height knobs (tweak if you want even taller)
 HEADER_MIN = 260   # px
 HEADER_MAX = 360   # px
 
@@ -44,6 +65,7 @@ section.main > div.block-container {{ padding-top: .35rem; }}
 
 /* Taller hero header with background image */
 .hero {{
+  position: relative;
   display:flex; align-items:flex-end; justify-content:space-between; gap:1rem;
   padding:1.4rem 1.6rem; border-radius:16px;
   border:1px solid rgba(255,255,255,.06);
@@ -52,7 +74,7 @@ section.main > div.block-container {{ padding-top: .35rem; }}
   overflow: hidden;
   %HERO_BG%
   background-size: cover;
-  background-position: center top;   /* show more of the image upper area */
+  background-position: center top;
 }}
 .hero h1 {{ margin:.1rem 0; font-size:2.1rem; line-height:1.15; text-shadow:0 2px 8px rgba(0,0,0,.35); }}
 .hero p  {{ margin:.25rem 0 .6rem 0; opacity:.95; text-shadow:0 1px 4px rgba(0,0,0,.35); }}
@@ -102,25 +124,87 @@ hr {{ border: none; border-top: 1px solid rgba(255,255,255,.1); margin: 1.0rem 0
   to   {{ transform: rotate(360deg); }}
 }}
 .status-text {{ font-size:.95rem; opacity:.9 }}
+
+/* --- Team Opal pill: sticky over header, aligned with content --- */
+.brand-inline {{
+  position: sticky;
+  z-index: 2147483647;      /* above Streamlit header/sidebar */
+  display: inline-flex; align-items: center; gap: .55rem;
+  margin: 0 0 2rem 0;      /* aligned with content column */
+  padding: 0.5rem .8rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,.18);
+  background: rgba(6,10,20,.55);
+  backdrop-filter: blur(6px);
+  pointer-events: none;     /* don't block toolbar/buttons */
+}}
+.brand-inline img {{
+  width: 55px; height: 55px; border-radius: 50%;
+  display: block; object-fit: cover;
+}}
+.brand-name {{
+  font-weight: 600; letter-spacing: .2px;
+  font-size: 1.5rem; white-space: nowrap;
+  text-shadow: 0 1px 2px rgba(0,0,0,.25);
+}}
+
+/* Opal glow animation */
+.opal-glow {{
+  animation: opalPulse 3.2s ease-in-out infinite;
+  box-shadow:
+    0 0 8px rgba(160,233,255,.35),
+    0 0 18px rgba(185,242,255,.25),
+    0 0 28px rgba(255,180,230,.18);
+}}
+@keyframes opalPulse {{
+  0%   {{ box-shadow: 0 0 6px rgba(160,233,255,.30), 0 0 14px rgba(185,242,255,.18), 0 0 22px rgba(255,180,230,.12); transform: translateZ(0); }}
+  50%  {{ box-shadow: 0 0 12px rgba(160,233,255,.55), 0 0 26px rgba(185,242,255,.38); }}
+  100% {{ box-shadow: 0 0 6px rgba(160,233,255,.30), 0 0 14px rgba(185,242,255,.18), 0 0 22px rgba(255,180,230,.12); }}
+}}
+
+@media (max-width: 640px) {{
+  .brand-inline {{ top: 6px; }}
+  .brand-inline img {{ width: 24px; height: 24px; }}
+  .brand-name {{ font-size: .9rem; }}
+}}
 </style>
 """
 st.markdown(css_template.replace("%HERO_BG%", hero_bg), unsafe_allow_html=True)
 
-# ---------- Header (no logo here to save vertical space) ----------
-st.markdown("""
-<div class="hero">
-  <div class="left">
-    <h1>Defence ISM Compliance Assistant</h1>
-    <p>Multi-agent AutoGen • Azure OpenAI • Reproducible runs</p>
-    <div class="badges">
-      <span class="badge">Local & Docker</span>
-      <span class="badge">ZIP & Folder</span>
-      <span class="badge ok">Ready</span>
-    </div>
-  </div>
-  <div class="right"></div>
-</div>
-""", unsafe_allow_html=True)
+# ---------- Brand pill (GIF supported) ----------
+if logo_b64:
+    brand_html = (
+        f'<div class="brand-inline opal-glow">'
+        f'<img src="data:{logo_mime};base64,{logo_b64}" alt="{TEAM_NAME} logo" />'
+        f'<span class="brand-name">{TEAM_NAME}</span>'
+        f'</div>'
+    )
+else:
+    brand_html = (
+        '<div class="brand-inline opal-glow">'
+        '<div style="width:28px;height:28px;border-radius:50%;'
+        'background:radial-gradient(circle at 30% 30%, #b9f2ff 0%, #a0e9ff 35%, #ffd6f2 65%, transparent 70%);"></div>'
+        f'<span class="brand-name">{TEAM_NAME}</span>'
+        '</div>'
+    )
+st.markdown(brand_html, unsafe_allow_html=True)
+
+# ---------- Hero ----------
+hero_html = (
+    '<div class="hero">'
+    '<div class="left">'
+    '<h1>Defence ISM Compliance Assistant</h1>'
+    '<p>Multi-agent AutoGen • Azure OpenAI • Reproducible runs</p>'
+    '<div class="badges">'
+    '<span class="badge">Local & Docker</span>'
+    '<span class="badge">ZIP & Folder</span>'
+    '<span class="badge ok">Ready</span>'
+    '</div>'
+    '</div>'
+    '<div class="right"></div>'
+    '</div>'
+)
+st.markdown(hero_html, unsafe_allow_html=True)
 
 st.write("")
 
@@ -353,5 +437,5 @@ fills a **System Security Plan** annex, and produces auditor-friendly output. It
 """)
     if HERO.exists():
         st.image(str(HERO), caption="Hero visual (header background)", use_container_width=True)
-    if LOGO.exists():
-        st.image(str(LOGO), caption="Event logo", use_container_width=False, width=360)
+    if LOGO_FILE.exists():
+        st.image(str(LOGO_FILE), caption="Event logo", use_container_width=False, width=360)
