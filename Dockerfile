@@ -16,8 +16,13 @@ RUN pip install --upgrade pip && \
 # COPY .env .env
 
 # Default command to run your main script
-CMD ["python", "main.py"]
+
+# Expose FastAPI/Uvicorn port
+EXPOSE 8000
+
+# Default command to run your main script
+CMD ["python", "webserver_ajax.py"]
 
 
 # > docker build -t hackathon-adl-sep-2025-team03 . 
-# > docker run --rm -it hackathon-adl-sep-2025-team03
+# > docker run -p 8000:8000 --rm -it hackathon-adl-sep-2025-team03

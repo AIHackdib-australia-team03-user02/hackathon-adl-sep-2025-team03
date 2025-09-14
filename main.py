@@ -189,19 +189,19 @@ def selector_func(messages):
 import openpyxl
 from datetime import datetime
 spreadsheet_path = os.path.join(os.getcwd(), "input_spreadsheet", "test.xlsx")
-wb = openpyxl.load_workbook(spreadsheet_path, data_only=True)
-ws = wb.active
-# Column O is the 15th column (index 14)
-criteria = []
+# wb = openpyxl.load_workbook(spreadsheet_path, data_only=True)
+# ws = wb.active
+# # Column O is the 15th column (index 14)
+# criteria = []
 
-count = 0
-for row in ws.iter_rows(min_row=2):  # skip header
-    if count >= 10:
-        break
-    count += 1
-    val = row[14].value
-    if val and str(val).strip():
-        criteria.append(str(val).strip())
+# count = 0
+# for row in ws.iter_rows(min_row=2):  # skip header
+#     if count >= 10:
+#         break
+#     count += 1
+#     val = row[14].value
+#     if val and str(val).strip():
+#         criteria.append(str(val).strip())
 
 load_dotenv()
 
@@ -219,82 +219,82 @@ team = SelectorGroupChat(
 
 
 
-async def main():
-    print (blueprint_search_tool.schema)
-    results = []
-    for guideline_description in criteria:
-        task = f"Determine if this criteria has been satisfied with the current setup scripts: '{guideline_description}'"
-        print(f"\n\n=== Running task: {guideline_description} ===\n\n")
-        team.reset()
-        result = await Console(team.run_stream(task=task))
+# async def main():
+    #print (blueprint_search_tool.schema)
+#     results = []
+#     for guideline_description in criteria:
+#         task = f"Determine if this criteria has been satisfied with the current setup scripts: '{guideline_description}'"
+#         print(f"\n\n=== Running task: {guideline_description} ===\n\n")
+#         team.reset()
+#         result = await Console(team.run_stream(task=task))
 
-        # Only append the final message (summary) from the result
-        if hasattr(result, "messages") and result.messages:
-            final_message = result.messages[-2].content
-            final_message += "\n\n" + result.messages[-1].content
-            results.append(f"{guideline_description}: {final_message}")
-        else:
-            results.append(f"{guideline_description}: [No summary found]")
+#         # Only append the final message (summary) from the result
+#         if hasattr(result, "messages") and result.messages:
+#             final_message = result.messages[-2].content
+#             final_message += "\n\n" + result.messages[-1].content
+#             results.append(f"{guideline_description}: {final_message}")
+#         else:
+#             results.append(f"{guideline_description}: [No summary found]")
 
-    # Write results to output file
-    now_str = datetime.now().strftime("%Y%m%d_%H%M%S")
-    output_path = os.path.join(os.getcwd(), f"output_guideline_results_{now_str}.html")
-    with open(output_path, "w", encoding="utf-8") as f:
-        f.write("""
-<html>
-<head>
-    <title>Guideline Results</title>
-    <style>
-        body {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            background: #f8f9fa;
-            margin: 0;
-            padding: 2em;
-        }
-        h1 {
-            color: #2c3e50;
-            margin-bottom: 1em;
-        }
-        ul {
-            list-style: none;
-            padding: 0;
-        }
-        li {
-            background: #fff;
-            margin-bottom: 1em;
-            padding: 1em;
-            border-radius: 8px;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.07);
-        }
-        strong {
-            color: #2980b9;
-            font-size: 1.1em;
-        }
-        .summary {
-            display: block;
-            margin-top: 0.5em;
-            color: #444;
-            white-space: pre-line;
-        }
-    </style>
-</head>
-<body>
-    <h1>Guideline Results</h1>
-    <ul>
-""")
-        for line in results:
-            green = "GREEN" in line
-            guideline, summary = line.split(":", 1) if ":" in line else (line, "")
-            f.write(f"""        <li style="background: {'#d4edda' if green else '#f8d7da'};">
-            <strong>{guideline.strip()}</strong>
-            <span class="summary">{summary.strip()}</span>
-        </li>
-""")
-        f.write("""
-    </ul>
-</body>
-</html>
-""")
+#     # Write results to output file
+#     now_str = datetime.now().strftime("%Y%m%d_%H%M%S")
+#     output_path = os.path.join(os.getcwd(), f"output_guideline_results_{now_str}.html")
+#     with open(output_path, "w", encoding="utf-8") as f:
+#         f.write("""
+# <html>
+# <head>
+#     <title>Guideline Results</title>
+#     <style>
+#         body {
+#             font-family: 'Segoe UI', Arial, sans-serif;
+#             background: #f8f9fa;
+#             margin: 0;
+#             padding: 2em;
+#         }
+#         h1 {
+#             color: #2c3e50;
+#             margin-bottom: 1em;
+#         }
+#         ul {
+#             list-style: none;
+#             padding: 0;
+#         }
+#         li {
+#             background: #fff;
+#             margin-bottom: 1em;
+#             padding: 1em;
+#             border-radius: 8px;
+#             box-shadow: 0 2px 6px rgba(0,0,0,0.07);
+#         }
+#         strong {
+#             color: #2980b9;
+#             font-size: 1.1em;
+#         }
+#         .summary {
+#             display: block;
+#             margin-top: 0.5em;
+#             color: #444;
+#             white-space: pre-line;
+#         }
+#     </style>
+# </head>
+# <body>
+#     <h1>Guideline Results</h1>
+#     <ul>
+# """)
+#         for line in results:
+#             green = "GREEN" in line
+#             guideline, summary = line.split(":", 1) if ":" in line else (line, "")
+#             f.write(f"""        <li style="background: {'#d4edda' if green else '#f8d7da'};">
+#             <strong>{guideline.strip()}</strong>
+#             <span class="summary">{summary.strip()}</span>
+#         </li>
+# """)
+#         f.write("""
+#     </ul>
+# </body>
+# </html>
+# """)
 
-if __name__ == "__main__":
-    asyncio.run(main())
+# if __name__ == "__main__":
+#     asyncio.run(main())
